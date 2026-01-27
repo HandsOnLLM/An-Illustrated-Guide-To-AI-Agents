@@ -1,6 +1,7 @@
 import inspect
 import difflib
 import textwrap
+import uuid
 from pygments import highlight
 from pygments.lexers import DiffLexer
 from pygments.formatters import HtmlFormatter
@@ -13,9 +14,7 @@ class DiffViewer:
     directly inside a Jupyter notebook cell.
     """
 
-    def __init__(
-        self, old_cls, new_cls, old_name="Old", new_name="New", style="github-dark"
-    ):
+    def __init__(self, old_cls, new_cls, old_name="Old", new_name="New", style="github-dark"):
         self.old_cls = old_cls
         self.new_cls = new_cls
         self.old_name = old_name
@@ -76,10 +75,7 @@ class CodeAnnotator:
         self.source = source
         self.property = property
         self.style = style
-        self.annotations = {
-            (k, k) if isinstance(k, int) else tuple(k): v
-            for k, v in (annotations or {}).items()
-        }
+        self.annotations = {(k, k) if isinstance(k, int) else tuple(k): v for k, v in (annotations or {}).items()}
 
     def _get_source(self):
         """Extract source code, optionally for a specific method or property."""
@@ -91,19 +87,16 @@ class CodeAnnotator:
 
     def _repr_html_(self):
         src = self._get_source()
-        hl_lines = [
-            ln for start, end in self.annotations for ln in range(start, end + 1)
-        ]
+        hl_lines = [ln for start, end in self.annotations for ln in range(start, end + 1)]
 
-        fmt = HtmlFormatter(
-            style=self.style, linenos="inline", cssclass="ca", hl_lines=hl_lines
-        )
+        uid = f"ca-{uuid.uuid4().hex[:8]}"
+        fmt = HtmlFormatter(style=self.style, linenos="inline", cssclass=uid, hl_lines=hl_lines)
         code = highlight(src, PythonLexer(), fmt)
         bg = fmt.style.background_color
 
         # Build annotation divs with connector lines
         notes = "".join(
-            f'<div style="position:absolute;top:{(start - 1) * 1.5}rem;height:{(end - start + 1) * 1.5}rem;'
+            f'<div style="position:absolute;top:{(start - 1) * 1.5}em;height:{(end - start + 1) * 1.5}em;'
             f'display:flex;align-items:center;font-size:14px;padding-left:16px;padding-right:16px">'
             f'<span style="position:absolute;left:0;top:0;bottom:0;width:3px;background:#f1c40f;border-radius:2px"></span>'
             f'<span style="color:#ddd;line-height:1.4">{text}</span></div>'
@@ -111,10 +104,10 @@ class CodeAnnotator:
         )
 
         return f"""<style>
-{fmt.get_style_defs(".ca")}
-.ca pre{{margin:0;line-height:1.5rem}}
-.ca .hll{{background:#3d4626!important;display:block;width:100%}}
-.ca .linenos{{background:transparent!important}}
+{fmt.get_style_defs(f".{uid}")}
+.{uid} pre{{margin:0;line-height:1.5em}}
+.{uid} .hll{{background:#3d4626!important;display:block;width:100%}}
+.{uid} .linenos{{background:transparent!important}}
 </style>
 <div style="display:inline-flex;background:{bg};border-radius:8px;border:1px solid #444;margin:10px 0;font-family:monospace">
 <div style="flex:3;overflow-x:auto">{code}</div>

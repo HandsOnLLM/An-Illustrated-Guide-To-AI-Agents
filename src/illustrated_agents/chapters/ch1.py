@@ -24,7 +24,7 @@ class TinyAgent:
 agent_annotated = CodeAnnotator(
     TinyAgent,
     annotations={
-        (14, 16): "In the `run` method, we run the `TinyAgent` on a given task in either a single `_step` or multiple `_step`s.",
-        (18, 21): "A single step typically consists of processing the input and generating a response.",
+        (11, 13): "In the `run` method, we run the `TinyAgent` on a given task in either a single `_step` or multiple `_step`s.",
+        (15, 18): "A single step typically consists of processing the input and generating a response.",
     },
 )
