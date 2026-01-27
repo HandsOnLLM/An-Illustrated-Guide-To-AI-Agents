@@ -38,26 +38,21 @@ class DiffViewer:
         )
 
         # 3. Pygments formatter (Diff + Python-aware styling)
-        formatter = HtmlFormatter(style=self.style)
-        css = formatter.get_style_defs(".highlight")
+        uid = f"dv-{uuid.uuid4().hex[:8]}"
+        formatter = HtmlFormatter(style=self.style, cssclass=uid)
+        bg = formatter.style.background_color
 
         # 4. Highlight
         html = highlight(diff, DiffLexer(), formatter)
 
         # 5. Inject CSS so it renders nicely inline
-        return f"""
-    <style>
-    {css}
-    .highlight {{
-        font-size: 14px;
-        line-height: 1.4;
-        border-radius: 8px;
-        padding: 12px;
-        overflow-x: auto;
-    }}
-    </style>
-    {html}
-    """
+        return f"""<style>
+{formatter.get_style_defs(f".{uid}")}
+.{uid}{{background:{bg}!important;color:#e6edf3!important;font-size:14px;line-height:1.4;border-radius:8px;padding:12px;overflow-x:auto}}
+.{uid} pre{{background:{bg}!important;color:#e6edf3!important;margin:0}}
+.{uid} code{{background:{bg}!important;color:#e6edf3!important}}
+</style>
+{html}"""
 
 
 class CodeAnnotator:
@@ -105,13 +100,15 @@ class CodeAnnotator:
 
         return f"""<style>
 {fmt.get_style_defs(f".{uid}")}
-.{uid} pre{{margin:0;line-height:1.5em}}
+.{uid}{{background:{bg}!important;color:#e6edf3!important}}
+.{uid} pre{{margin:0;line-height:1.5em;background:{bg}!important;color:#e6edf3!important}}
+.{uid} code{{background:{bg}!important;color:#e6edf3!important}}
 .{uid} .hll{{background:#3d4626!important;display:block;width:100%}}
-.{uid} .linenos{{background:transparent!important}}
+.{uid} .linenos{{background:{bg}!important;color:#e6edf3!important}}
 </style>
 <div style="display:inline-flex;background:{bg};border-radius:8px;border:1px solid #444;margin:10px 0;font-family:monospace">
-<div style="flex:3;overflow-x:auto">{code}</div>
-<div style="flex:1;min-width:500px;position:relative;background:rgba(255,255,255,.03);border-left:1px solid #555;color:#ccc;font-family:system-ui,sans-serif">{notes}</div>
+<div style="flex:3;overflow-x:auto;background:{bg}">{code}</div>
+<div style="flex:1;min-width:500px;position:relative;background:{bg};border-left:1px solid #555;color:#ccc;font-family:system-ui,sans-serif">{notes}</div>
 </div>"""
 
     def save(self, path):
