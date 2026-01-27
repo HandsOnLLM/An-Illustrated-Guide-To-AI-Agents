@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "illustrated-agents"
+version = "0.1.0"
+description = "The code for the book 'An Illustrated Guide to AI Agents'"
+authors = [
+  { name = "Maarten Grootendorst"},
+  { name = "Jay Alammar"}
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "litellm>=1.81.1",
+    "pygments>=2.19.2",
+]
+
+[tool.uv]
+index = [
+  { name = "pypi", url = "https://pypi.org/simple" },
+  { name = "llama-cpp-cu123", url = "https://abetlen.github.io/llama-cpp-python/whl/cu123" }
+]
+
+[tool.uv.sources]
+ilustrated-agents = { workspace = true }
+
+[project.optional-dependencies]
+jupyter = ["jupyterlab>=4.1.5"]
+cpu = ["llama-cpp-python==0.3.16"]
+cuda = ["llama-cpp-python==0.3.16"]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 140
