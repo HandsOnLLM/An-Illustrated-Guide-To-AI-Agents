@@ -89,6 +89,10 @@ class CodeAnnotator:
         code = highlight(src, PythonLexer(), fmt)
         bg = fmt.style.background_color
 
+        # Remove the empty <span></span> that Pygments adds at the start of the pre
+        # This can cause alignment issues in some notebook environments
+        code = code.replace("<pre><span></span>", "<pre>")
+
         # Build annotation divs with connector lines
         notes = "".join(
             f'<div style="position:absolute;top:{(start - 1) * 1.5}em;height:{(end - start + 1) * 1.5}em;'
@@ -98,17 +102,20 @@ class CodeAnnotator:
             for (start, end), text in sorted(self.annotations.items())
         )
 
+        # Override the global `pre { line-height: 125%; }` that Pygments generates
+        # Use !important to ensure our line-height takes precedence in all environments
         return f"""<style>
+pre{{line-height:1.5em!important}}
 {fmt.get_style_defs(f".{uid}")}
-.{uid}{{background:{bg}!important;color:#e6edf3!important}}
-.{uid} pre{{margin:0;line-height:1.5em;background:{bg}!important;color:#e6edf3!important}}
+.{uid}{{background:{bg}!important;color:#e6edf3!important;font-size:14px}}
+.{uid} pre{{margin:0;padding:0;line-height:1.5em!important;background:{bg}!important;color:#e6edf3!important}}
 .{uid} code{{background:{bg}!important;color:#e6edf3!important}}
 .{uid} .hll{{background:#3d4626!important;display:block;width:100%}}
 .{uid} .linenos{{background:{bg}!important;color:#e6edf3!important}}
 </style>
-<div style="display:inline-flex;background:{bg};border-radius:8px;border:1px solid #444;margin:10px 0;font-family:monospace">
+<div style="display:inline-flex;align-items:flex-start;background:{bg};border-radius:8px;border:1px solid #444;margin:10px 0;font-family:monospace;font-size:14px;line-height:1.5em">
 <div style="flex:3;overflow-x:auto;background:{bg}">{code}</div>
-<div style="flex:1;min-width:500px;position:relative;background:{bg};border-left:1px solid #555;color:#ccc;font-family:system-ui,sans-serif">{notes}</div>
+<div style="flex:1;min-width:500px;position:relative;background:{bg};border-left:1px solid #555;color:#ccc;font-family:system-ui,sans-serif;font-size:14px">{notes}</div>
 </div>"""
 
     def save(self, path):
