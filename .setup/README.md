@@ -32,7 +32,7 @@ pip install git+https://github.com/HandsOnLLM/Illustrated-Agents.git
 
 ### uv
 
-Our preferred method for creating and managing environments is [`uv`](https://github.com/astral-sh/uv). Usage is straightforward:
+Our preferred method for creating and managing environments is [`uv`](https://github.com/astral-sh/uv) which can be [installed like so](https://docs.astral.sh/uv/getting-started/installation/). Usage is straightforward:
 
 ```bash
 uv add illustrated-agents

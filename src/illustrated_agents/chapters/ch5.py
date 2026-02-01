@@ -1,4 +1,5 @@
-from illustrated_agents import LLM, Memory, Tools
+from illustrated_agents import LLM, Memory
+from illustrated_agents.tools import Tools, MCPTools
 from illustrated_agents.utils import DiffViewer
 from illustrated_agents.chapters import ch4
 from illustrated_agents.utils import CodeAnnotator
@@ -63,5 +64,20 @@ run_tool_annotated = CodeAnnotator(
         7: "The tool name and possible arguments are extracted from the parsed tool call.",
         (11, 12): "Tools are looked up in the registry and executed with the provided arguments.",
         (15, 16): "We also handle the special 'intermediate_answer' tool which allows the LLM to respond without calling a real tool.",
+    },
+)
+
+run_mcp_tool_annotated = CodeAnnotator(
+    MCPTools,
+    annotations={
+        6: "This is the main function for loading the tools.",
+        9: "This the the path to your MCP server.",
+        (15, 20): """The tools are retrieved from the MCP Server using `list_tools()`. The `list_tools()` function is a 
+standardized way to query an MCP server for its available tools. This will always return a list of tool metadata, including 
+tool names, descriptions, and parameter specifications.""",
+        (25, 30): """The listed tools are added to the registry that we defined previously in Chapter 5 using the `Tools` class. 
+Here, the `_make_tool_caller` creates a callable function for each tool that knows how to call the MCP server with the correct parameters.""",
+        (46, 50): """As before, the MCP Server is called and the corresponding tool, together with their arguments, are called using 
+the MCP Server. The execution is done with `session.call_tool` which again is a standardized function according to the MCP Protocol.""",
     },
 )
