@@ -50,6 +50,18 @@ All examples can be run in Google Colab for **free** using their T4 GPU. We have
 
 TBA
 
+## A Unique Way of Learning
+
+We wanted to do something special this time around and allow readers to **Build an Agent From Scratch**! However, we did not stop there and wanted the act of building the Agent to be a modular experience that enhances the learning experience. By iteratively adding components, one at a time, it becomes much more intuitive how an Agent actually works.
+
+We decided to combine this with creative (if we say so ourselves) ways to explain what is happening and how each added component affects your `TinyAgent`!
+
+![images/diffs.png](images/tinyagents.png)
+
+![images/diffs.png](images/diffs.png)
+
+![images/annotated.png](images/annotated.png)
+
 ## Citation
 
 Please consider citing the book if you consider it useful for your research:
