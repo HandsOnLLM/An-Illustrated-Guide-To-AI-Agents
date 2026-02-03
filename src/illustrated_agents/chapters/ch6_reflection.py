@@ -1,7 +1,7 @@
 from illustrated_agents import LLM, Memory, Tools, ReAct, Reflector
 from illustrated_agents.utils import DiffViewer
 from illustrated_agents.utils import CodeAnnotator
-from illustrated_agents.chapters import ch6a
+from illustrated_agents.chapters import ch6
 
 
 class TinyAgent:
@@ -13,9 +13,12 @@ class TinyAgent:
         self.tools = tools
         self.planner = planner
         self.reflector = reflector
+        self.skills = None  # Chapter 6: Add Skills
 
-        # Tell the LLM about available tools
-        system_prompt = "You are a helpful AI agent.\n\n" + self.planner.prompt + "\n\n" + self.tools.prompt
+        # Build system prompt with all components
+        system_prompt = "You are a helpful AI agent.\n\n"
+        system_prompt += self.planner.prompt + "\n\n"
+        system_prompt += self.tools.prompt
         self.memory.add("user", system_prompt)
 
     def run(self, task: str) -> str:
@@ -64,7 +67,7 @@ class TinyAgent:
         return None
 
 
-tinyagents_diff = DiffViewer(ch6a.TinyAgent, TinyAgent, "ch6.TinyAgent without Reflection", "ch6.TinyAgent Reflection")
+tinyagents_diff = DiffViewer(ch6.TinyAgent, TinyAgent, "ch6.TinyAgent without Reflection", "ch6.TinyAgent Reflection")
 
 
 reflector_annotated = CodeAnnotator(

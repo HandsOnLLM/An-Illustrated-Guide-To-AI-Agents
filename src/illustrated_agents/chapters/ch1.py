@@ -10,6 +10,7 @@ class TinyAgent:
         self.tools = None  # Chapter 5: Add Tools
         self.planner = None  # Chapter 6: Add Planning
         self.reflector = None  # Chapter 6: Add Reflection
+        self.skills = None  # Chapter 6: Add Skills
 
     def run(self, task: str) -> str:
         """Run the agent on a task."""
@@ -24,7 +25,7 @@ class TinyAgent:
 agent_annotated = CodeAnnotator(
     TinyAgent,
     annotations={
-        (11, 13): "In the `run` method, we run the `TinyAgent` on a given task in either a single `_step` or multiple `_step`s.",
-        (15, 18): "A single step typically consists of processing the input and generating a response.",
+        (12, 14): "In the `run` method, we run the `TinyAgent` on a given task in either a single `_step` or multiple `_step`s.",
+        (16, 19): "A single step typically consists of processing the input and generating a response.",
     },
 )

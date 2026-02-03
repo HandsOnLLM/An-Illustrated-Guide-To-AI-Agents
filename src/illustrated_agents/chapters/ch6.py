@@ -13,9 +13,12 @@ class TinyAgent:
         self.tools = tools
         self.planner = planner
         self.reflector = None  # Chapter 6: Add Reflection
+        self.skills = None  # Chapter 6: Add Skills
 
-        # Tell the LLM about available tools
-        system_prompt = "You are a helpful AI agent.\n\n" + self.planner.prompt + "\n\n" + self.tools.prompt
+        # Build system prompt with all components
+        system_prompt = "You are a helpful AI agent.\n\n"
+        system_prompt += self.planner.prompt + "\n\n"
+        system_prompt += self.tools.prompt
         self.memory.add("user", system_prompt)
 
     def run(self, task: str) -> str:
@@ -91,7 +94,7 @@ react_parse_annotated = CodeAnnotator(
 tinyagent_init_annotated = CodeAnnotator(
     TinyAgent.__init__,
     annotations={
-        9: "We added the prompt of the ReAct module to the system prompt and follow it up with the tools prompt.",
+        (11, 12): "We added the prompt of the ReAct module to the system prompt and follow it up with the tools prompt.",
     },
 )
 

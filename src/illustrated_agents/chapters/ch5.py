@@ -14,9 +14,11 @@ class TinyAgent:
         self.tools = tools
         self.planner = None  # Chapter 6: Add Planning
         self.reflector = None  # Chapter 6: Add Reflection
+        self.skills = None  # Chapter 6: Add Skills
 
-        # Tell the LLM about available tools
-        system_prompt = "You are a helpful assistant.\n\n" + self.tools.prompt
+        # Build system prompt with all components
+        system_prompt = "You are a helpful assistant.\n\n"
+        system_prompt += self.tools.prompt
         self.memory.add("user", system_prompt)
 
     def run(self, task: str) -> str:

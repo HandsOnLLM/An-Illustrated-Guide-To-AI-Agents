@@ -1,9 +1,8 @@
-from illustrated_agents.llm import LLM
-from illustrated_agents.memory import Memory
-from illustrated_agents.planning import ReAct
-from illustrated_agents.tools import Tools
-from illustrated_agents.reflection import Reflector
+from illustrated_agents import LLM, Memory, Tools, ReAct
 from illustrated_agents.skills import Skills
+from illustrated_agents.reflection import Reflector
+from illustrated_agents.utils import DiffViewer, CodeAnnotator
+from illustrated_agents.chapters import ch6_reflection
 
 
 class TinyAgent:
@@ -75,3 +74,37 @@ class TinyAgent:
         self.memory.add("user", obs_prompt)
 
         return None
+
+
+tinyagents_diff = DiffViewer(ch6_reflection.TinyAgent, TinyAgent, "ch6_reflection.TinyAgent", "ch6_skills.TinyAgent")
+
+
+skills_class_annotated = CodeAnnotator(
+    Skills.prompt,
+    annotations={
+        5: "Separate section for skill descriptions in the system prompt.",
+        (
+            7,
+            8,
+        ): "Method to activate a skill and retrieve its instructions. The same structure as a tool call is used. Everything is a tool!",
+        13: "Only descriptions go into the prompt - instructions are loaded on demand.",
+    },
+)
+
+skills_activate_annotated = CodeAnnotator(
+    Skills.activate,
+    annotations={
+        10: "The skill is activated as if it was a tool call.",
+        13: "An 'observation' is returned with the skill instructions.",
+    },
+)
+
+skills_load_annotated = CodeAnnotator(
+    Skills.load_from_file,
+    annotations={
+        6: "The two parts (yaml frontmatter and markdown body) are extracted from the SKILL.md file.",
+        (9, 11): "The frontmatter is separately parsed to get name and description. Note that it can contain other metadata as well.",
+        14: "The instructions (body) are stored separately.",
+        (17, 20): "The skill is stored in the skills dictionary where the description and instructions can be accessed separately.",
+    },
+)

@@ -1,7 +1,7 @@
 import json
 
 from illustrated_agents import LLM, Tools, Memory, ReAct
-from illustrated_agents.chapters.ch6a import TinyAgent
+from illustrated_agents.chapters.ch6 import TinyAgent
 
 
 if __name__ == "__main__":

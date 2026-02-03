@@ -1,7 +1,7 @@
 import json
 from illustrated_agents import Tools, Memory, LLM, ReAct
 from illustrated_agents.chapters.ch5 import TinyAgent as ToolAgent
-from illustrated_agents.chapters.ch6a import TinyAgent
+from illustrated_agents.chapters.ch6 import TinyAgent
 
 
 def add(a: str, b: str) -> float:

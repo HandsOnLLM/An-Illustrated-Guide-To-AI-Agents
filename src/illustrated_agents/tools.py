@@ -7,6 +7,9 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
 import illustrated_agents
+import nest_asyncio
+
+nest_asyncio.apply()
 
 SERVER_PATH = str(Path(illustrated_agents.__file__).parent / "chapters" / "ch5_mcp_server.py")
 
