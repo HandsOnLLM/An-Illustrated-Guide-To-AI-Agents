@@ -71,7 +71,3 @@ Only use the final_answer tool when you are completely done with all subtasks an
             result[key] = match.group(1).strip() if match else ""
 
         return result
-
-    def format_observation(self, action: str, observation: str) -> str:
-        """Format a tool observation for the conversation."""
-        return f"OBSERVATION: {action} -> {observation}"

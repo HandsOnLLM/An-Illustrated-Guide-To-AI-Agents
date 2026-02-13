@@ -61,16 +61,16 @@ class TinyAgent:
         if tool_call["tool"] == "final_answer":
             return tool_call.get("args", "")
 
-        # Activate skill and add instructions to memory
+        # Activate skill and extract the observation
         if tool_call["tool"] == "use_skill":
             observation = self.skills.activate(tool_call)
-            obs_prompt = self.planner.format_observation(action, observation)
-            self.memory.add("user", obs_prompt)
-            return None
 
-        # Execute tool and add observation to memory
-        observation = self.tools.run_tool(tool_call)
-        obs_prompt = self.planner.format_observation(action, observation)
+        # Execute tool and extract the observation
+        else:
+            observation = self.tools.run_tool(tool_call)
+
+        # Format the observation and add it to memory
+        obs_prompt = f"OBSERVATION: {action} -> {observation}"
         self.memory.add("user", obs_prompt)
 
         return None

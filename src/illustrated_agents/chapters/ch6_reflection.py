@@ -59,9 +59,9 @@ class TinyAgent:
         if tool_call["tool"] == "final_answer":
             return tool_call.get("args", "")
 
-        # Execute tool and add observation to memory
+        # Execute tool and extract the observation
         observation = self.tools.run_tool(tool_call)
-        obs_prompt = self.planner.format_observation(action, observation)
+        obs_prompt = f"OBSERVATION: {action} -> {observation}"
         self.memory.add("user", obs_prompt)
 
         return None
