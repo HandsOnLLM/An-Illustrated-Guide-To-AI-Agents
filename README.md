@@ -3,9 +3,9 @@
 <a href="https://www.linkedin.com/in/mgrootendorst/"><img src="https://img.shields.io/badge/Follow%20Maarten-blue.svg?logo=linkedin"></a>
 <a href="https://www.linkedin.com/in/jalammar/"><img src="https://img.shields.io/badge/Follow%20Jay-blue.svg?logo=linkedin"></a>
 
-Welcome! In this repository you will find the code for the book [An Illustrated Guide to AI Agents](https://www.amazon.com/Hands-Large-Language-Models-Understanding/dp/1098150961) written by [Maarten Grootendorst](https://www.linkedin.com/in/mgrootendorst/) and [Jay Alammar](https://www.linkedin.com/in/jalammar/). In this repository, we will be building:<br> 
+Welcome! In this repository you will find the code for the book [An Illustrated Guide to AI Agents](https://www.amazon.com/Hands-Large-Language-Models-Understanding/dp/1098150961) written by [Maarten Grootendorst](https://www.linkedin.com/in/mgrootendorst/) and [Jay Alammar](https://www.linkedin.com/in/jalammar/). In this repository, you will:<br> 
 
-<p align="center"><b><i>"Building an Agent From Scratch!"</i></b></p>
+<p align="center"><b><i>"Build an Agent From Scratch!"</i></b></p>
 
 You will build your own Agentic Framework from the ground up using nothing more than three dependencies; `LiteLLM`, `MCP`, and `pygments` (for nice styling 😉).
 
@@ -24,11 +24,11 @@ The book is available on:
 * [Barnes and Noble](...)
 * [Goodreads](...)
 
-## Table of Contents - Building a `TinyAgent` from Scratch!
+## Table of Contents - Build a `TinyAgent` from Scratch!
 
 The code examples in this repo are used for you to start building a `TinyAgent` entirely from scratch, using nothing more than LLM calls. With only one dependency (`LiteLLM`), you will learn how to create your own Agent that has memory, tools, and autonomy! 
 
-All examples can be run in Google Colab for **free** using their T4 GPU. We have options for running everything either locally or on the cloud without any additional costs involved.
+All examples can be run in Google Colab for **free** using their T4 GPU. You have options for running everything either locally or on the cloud without any additional costs involved.
 
 
 | Chapter  | Notebook  |
