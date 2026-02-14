@@ -55,7 +55,7 @@ ACTION:
 Only use the final_answer tool when you are completely done with all subtasks and have the final answer ready.
 """
 
-    def parse_react(self, text: str) -> dict:
+    def parse(self, text: str) -> dict:
         """Parse a ReAct formatted response into THOUGHT and ACTION."""
 
         # The patterns for each section
@@ -70,4 +70,4 @@ Only use the final_answer tool when you are completely done with all subtasks an
             match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
             result[key] = match.group(1).strip() if match else ""
 
-        return result
+        return result["ACTION"]

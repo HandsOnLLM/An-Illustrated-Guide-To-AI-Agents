@@ -25,7 +25,7 @@ class TinyAgent:
         """Run the agent on a task."""
         self.memory.add("user", task)
 
-        # ReAct loop
+        # `Autonomy` loop
         for step in range(self.planner.max_steps):
             result = self._step()
             if result is not None:
@@ -34,17 +34,17 @@ class TinyAgent:
         return "Max steps reached without completion."
 
     def _step(self) -> str | None:
-        """Perform a single step of the ReAct loop."""
-        # Generate response
-        output = self.llm.generate(self.memory.get_messages())
-        self.memory.add("assistant", output)
+        """Perform a single step."""
+        # Generate response and add to memory
+        response = self.llm.generate(self.memory.get_messages())
+        self.memory.add("assistant", response)
 
-        # Parse ReAct response (THOUGHT + ACTION)
-        parsed = self.planner.parse_react(output)
+        # Parse planner's response to extract action if needed
+        response = self.planner.parse(response)
 
-        # Execute action if present
-        if self.tools.is_tool_call(parsed["ACTION"]):
-            return self._execute_action(parsed["ACTION"])
+        # Tool parsing and execution
+        if self.tools.has_tool_call(response):
+            return self._execute_action(response)
 
         return None
 
@@ -81,12 +81,12 @@ react_prompt_annotated = CodeAnnotator(
 
 
 react_parse_annotated = CodeAnnotator(
-    ReAct.parse_react,
+    ReAct.parse,
     annotations={
         (5, 8): """Extracts the <b>THOUGHT</b> and <b>ACTION</b> sections from the response. 
         Note that we stop at <b>OBSERVATION</b> to avoid hallucinated observations.""",
         (13, 14): """Searches for all matches using regular expressions (regex). 
-        The re.DOTALL flag allows . to match newlines and re.IGNORECASE makes the search case-insensitiveS. 
+        The re.DOTALL flag allows . to match newlines and re.IGNORECASE makes the search case-insensitive. 
         If a match is found, it extracts and trims the content; otherwise, it assigns an empty string.""",
     },
 )
@@ -102,7 +102,7 @@ tinyagent_run_annotated = CodeAnnotator(
     TinyAgent.run,
     annotations={
         3: "The initial task is immediately added to memory as a user message so that the Agent can reference it during the loop.",
-        (6, 9): "The ReAct loop where the agent performs steps until completion or max steps reached.",
+        (6, 9): "The `Autonomy` (ReACT) loop where the agent performs steps until completion or max steps reached.",
     },
 )
 

@@ -16,19 +16,31 @@ class TinyAgent:
 
     def run(self, task: str) -> str:
         """Run the agent on a task."""
-        return self._step(task)
-
-    def _step(self, task: str) -> str:
-        """Perform a single step."""
-        # 1. Every step, we add the user task to memory
         self.memory.add("user", task)
 
-        # 2. Then, we generate a response based on the conversation history
-        response = self.llm.generate(self.memory.get_messages())
+        return self._step()
 
-        # 3. Finally, we add the assistant's response to memory
+    def _step(self) -> str:
+        """Perform a single step."""
+        # Generate response and add to memory
+        response = self.llm.generate(self.memory.get_messages())
         self.memory.add("assistant", response)
         return response
+
+    def _execute_action(self, action: str) -> str | None:
+        """Execute a tool action."""
+        # Placeholder - will be implemented in later chapters
+        return f"Executed action: {action}"
+
+
+tinyagent_annotated = CodeAnnotator(
+    TinyAgent,
+    annotations={
+        14: "1. The user's query is added to the `Memory` module",
+        21: "2. Based on the current memory, the LLM generates a response.",
+        22: "3. The response of the LLM is added to the `Memory` module.",
+    },
+)
 
 
 memory_annotated = CodeAnnotator(

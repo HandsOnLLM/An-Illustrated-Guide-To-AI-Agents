@@ -49,7 +49,7 @@ class Tools:
 
         return f"Tool '{name}' not found."
 
-    def is_tool_call(self, text: str) -> bool:
+    def has_tool_call(self, text: str) -> bool:
         """Check whether there is a tool call in `text`."""
         return '"tool":' in text or '"tool:"' in text
 

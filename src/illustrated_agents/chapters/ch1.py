@@ -21,11 +21,20 @@ class TinyAgent:
         # Placeholder - will be implemented in later chapters
         return f"Received: {task}"
 
+    def _execute_action(self, action: str) -> str | None:
+        """Execute a tool action."""
+        # Placeholder - will be implemented in later chapters
+        return f"Executed action: {action}"
+
 
 agent_annotated = CodeAnnotator(
     TinyAgent,
     annotations={
         (12, 14): "In the `run` method, we run the `TinyAgent` on a given task in either a single `_step` or multiple `_step`s.",
         (16, 19): "A single step typically consists of processing the input and generating a response.",
+        (21, 24): """
+The `_execute_action` method is a placeholder for executing tool actions (like calling external APIs or performing calculations), 
+which will be implemented in later chapters.
+""",
     },
 )

@@ -23,33 +23,69 @@ class TinyAgent:
 
     def run(self, task: str) -> str:
         """Run the agent on a task."""
-        return self._step(task)
-
-    def _step(self, task: str) -> str:
-        """Perform a single step."""
-        # 1. Every step, we add the user task to memory
         self.memory.add("user", task)
 
-        # 2. Then, we generate a response based on the conversation history
-        response = self.llm.generate(self.memory.get_messages())
+        return self._step()
 
-        # 3. Finally, we add the assistant's response to memory
+    def _step(self) -> str:
+        """Perform a single step."""
+        # Generate response and add to memory
+        response = self.llm.generate(self.memory.get_messages())
         self.memory.add("assistant", response)
 
-        # 4. Tool parsing and execution
-        if self.tools.is_tool_call(response):
-            tool_call = self.tools.parse_tool_call(response)
-            observation = self.tools.run_tool(tool_call)
-            return str(observation)
+        # Tool parsing and execution
+        if self.tools.has_tool_call(response):
+            return self._execute_action(response)
 
         return response
+
+    def _execute_action(self, action: str) -> str | None:
+        """Execute a tool action."""
+        tool_call = self.tools.parse_tool_call(action)
+
+        # Execute tool and extract the observation
+        observation = self.tools.run_tool(tool_call)
+        obs_prompt = f"OBSERVATION: {action} -> {observation}"
+        self.memory.add("user", obs_prompt)
+
+        return obs_prompt
 
 
 tinyagents_diff = DiffViewer(ch4.TinyAgent, TinyAgent, "ch4.TinyAgent", "ch5.TinyAgent")
 
 
+agent_init_annotated = CodeAnnotator(
+    TinyAgent.__init__,
+    annotations={
+        (9, 12): """
+A system prompt is constructed that includes the base instruction and the tool descriptions. 
+This system prompt is added to memory at initialization so that the LLM is aware of the tools from the very beginning.
+Note that we use `user` since not all LLMs have a separate system role.
+""",
+    },
+)
+
+agent_step_annotated = CodeAnnotator(
+    TinyAgent._step,
+    annotations={
+        (7, 9): """
+After generating a response, we check if the response contains a tool call. If it does, we execute the tool action instead of returning the LLM's response directly.
+""",
+    },
+)
+
+agent_execute_action_annotated = CodeAnnotator(
+    TinyAgent._execute_action,
+    annotations={
+        3: "(1) The tool call is parsed to extract the tool name and arguments.",
+        6: "(2) the tool is executed using the `Tools` class which looks up the tool in the registry and calls it.",
+        8: "(3) The result of the tool execution is stored as an observation in memory.",
+    },
+)
+
+
 add_tool_annotated = CodeAnnotator(
-    Tools.is_tool_call,
+    Tools.has_tool_call,
     annotations={
         3: """We check whether there is a tool call by seeing if `"tool":` appears in the text. If it does, we think there is a tool call. """
     },
@@ -65,7 +101,9 @@ run_tool_annotated = CodeAnnotator(
     annotations={
         7: "The tool name and possible arguments are extracted from the parsed tool call.",
         (11, 12): "Tools are looked up in the registry and executed with the provided arguments.",
-        (15, 16): "We also handle the special 'intermediate_answer' tool which allows the LLM to respond without calling a real tool.",
+        (15, 16): """
+We also handle the special 'intermediate_answer' tool which allows the LLM to respond without calling a real tool. 
+We cover this in Chapter 6 when we talk about planning and reflection.""",
     },
 )
 

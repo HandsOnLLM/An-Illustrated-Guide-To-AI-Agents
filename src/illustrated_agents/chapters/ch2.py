@@ -23,6 +23,11 @@ class TinyAgent:
         messages = [{"role": "user", "content": task}]
         return self.llm.generate(messages)
 
+    def _execute_action(self, action: str) -> str | None:
+        """Execute a tool action."""
+        # Placeholder - will be implemented in later chapters
+        return f"Executed action: {action}"
+
 
 llm_annotated = CodeAnnotator(
     LLM,
