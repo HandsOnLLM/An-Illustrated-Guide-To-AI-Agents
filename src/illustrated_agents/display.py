@@ -1,0 +1,138 @@
+"""TinyAgent display handler using Rich for formatted console output."""
+
+import random
+import re
+import time
+import threading
+
+from rich.console import Console
+from rich.live import Live
+from rich.text import Text
+from rich.rule import Rule
+
+console = Console()
+
+LOGO = """\
+[bold cyan]
+
+                 ++
+                 +++++++++++++
+             ++++++--++----++++++
+           +++++--+++###++++++++++++
+         ++++--++++#######+++++++++++
+       ++++-+++##########++++-++++++++
+      +++-++#################++++++++++
+     +++++####################+++----++
+    ++++#######++++# ####++     +++++++
+    +++####+++      ###+-           +-+
+    ++#####      ####+
+   +#####
+   +####
++++####
+######
+  ####
+    ##+
+     ##+
+      #+
+       +
+
+            ~~~~~~~~~~~~~~~~~~~[/]
+[bold blue]            T i n y A g e n t[/]"""
+
+
+def label(name: str, style: str) -> str:
+    """Format a fixed-width label for step output."""
+    return f"[bold {style}]{name:<13}[/]"
+
+
+# --- Display handler ---
+
+THINKING_FRAMES = [
+    "        ",
+    " ~      ",
+    " ~~     ",
+    "~~~    ",
+    "~~ ~~  ",
+    "~  ~~ ~",
+    "   ~~~ ",
+    "     ~~",
+    "        ",
+]
+
+THINKING_MESSAGES = [
+    "Sonar pinging...",
+    "Echolocating...",
+    "Diving deep...",
+    "Surfacing...",
+    "Riding the current...",
+    "Making a splash...",
+    "Doing flips...",
+    "Chasing fish...",
+    "Blowing bubbles...",
+    "Somersaulting...",
+    "Fishing for answers...",
+    "Navigating the depths...",
+    "Scanning the ocean floor...",
+    "Making waves...",
+    "Deep dive...",
+]
+
+
+class Display:
+    """Handles agent events with Rich formatting."""
+
+    def __init__(self):
+        self._live = None
+        self._animating = False
+
+    def __call__(self, event: str, data: str | dict = None) -> None:
+        # Animate "thinking"
+        if event == "thinking":
+            self._animating = True
+            self._live = Live(console=console, refresh_per_second=8, transient=True)
+            self._live.start()
+            self._thinking_msg = random.choice(THINKING_MESSAGES)
+            threading.Thread(target=self._animate_thinking, daemon=True).start()
+
+        # Print THOUGHT
+        elif event == "response":
+            self._stop_thinking()
+            thought = self._extract_thought(data)
+            if thought:
+                console.print(f"  {label('THOUGHT', 'dark_orange')}[dim italic]{thought}[/]\n")
+
+        # Print ACTION
+        elif event == "tool_call" and data:
+            tool = data.get("tool")
+            if tool == "intermediate_answer":
+                console.print(f"  {label('ACTION', 'yellow')}[yellow]{data.get('kwargs', '')}[/]")
+            elif tool != "final_answer":
+                args = data.get("kwargs", {})
+                args_str = ", ".join(f"{k}={v!r}" for k, v in args.items())
+                console.print(f"  {label('ACTION', 'yellow')}[yellow]{tool}({args_str})[/]")
+
+        # Print OBSERVATION
+        elif event == "observation":
+            console.print(f"  {label('OBSERVATION', 'green')}{data}\n")
+            console.print(Rule(style="dim"), end="\n\n")
+
+    def _animate_thinking(self) -> None:
+        """A wave animation."""
+        i = 0
+        while self._animating and self._live:
+            frame = THINKING_FRAMES[i % len(THINKING_FRAMES)]
+            self._live.update(Text(f"  {self._thinking_msg}  {frame}", style="dark_orange"))
+            time.sleep(0.15)
+            i += 1
+
+    def _extract_thought(self, text: str) -> str | None:
+        """Extract the thought from the agent's response."""
+        match = re.search(r"THOUGHT:\s*(.+?)(?=ACTION:|$)", text, re.IGNORECASE | re.DOTALL)
+        return match.group(1).strip() if match else None
+
+    def _stop_thinking(self) -> None:
+        """Stop the thinking animation."""
+        self._animating = False
+        if self._live:
+            self._live.stop()
+            self._live = None

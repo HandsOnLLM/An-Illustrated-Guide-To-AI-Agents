@@ -7,7 +7,9 @@ Welcome! In this repository you will find the code for the book [An Illustrated 
 
 <p align="center"><b><i>"Build an Agent From Scratch!"</i></b></p>
 
-You will build your own Agentic Framework from the ground up using nothing more than three dependencies; `LiteLLM`, `MCP`, and `pygments` (for nice styling 😉).
+You will build your own Agentic Framework from the ground up using nothing more than lightweight dependencies: 
+
+> `LiteLLM` (cloud LLMs), `Ollama` (local LLMs), `MCP`, `Rich` (cli!) `pygments` (for nice styling 😉)
 
 Through the visually educational nature of this book and with **more than 450 custom made figures**, learn the practical tools and concepts you need to use AI Agents today!
 
@@ -26,7 +28,7 @@ The book is available on:
 
 ## Table of Contents - Build a `TinyAgent` from Scratch!
 
-The code examples in this repo are used for you to start building a `TinyAgent` entirely from scratch, using nothing more than LLM calls. With only one dependency (`LiteLLM`), you will learn how to create your own Agent that has memory, tools, and autonomy! 
+The code examples in this repo are used for you to start building a `TinyAgent` entirely from scratch, using nothing more than LLM calls. You will learn how to create your own Agent that has memory, tools, and autonomy! 
 
 All examples can be run in Google Colab for **free** using their T4 GPU. You have options for running everything either locally or on the cloud without any additional costs involved.
 

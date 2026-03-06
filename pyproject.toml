@@ -14,26 +14,22 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "litellm>=1.81.1",
-    "mcp==1.26.0",
+    "ollama>=0.6.1",
     "pygments>=2.19.2",
-]
-
-[tool.uv]
-index = [
-  { name = "pypi", url = "https://pypi.org/simple" },
-  { name = "llama-cpp-cu123", url = "https://abetlen.github.io/llama-cpp-python/whl/cu123" }
+    "rich>=14.3.2", 
+    "python-dotenv>=1.2.1",
+    "mcp>=1.26.0"
 ]
 
 [tool.uv.sources]
 ilustrated-agents = { workspace = true }
 
 [project.optional-dependencies]
-jupyter = ["jupyterlab>=4.1.5"]
-cpu = ["llama-cpp-python==0.3.16"]
-cuda = ["llama-cpp-python==0.3.16"]
-ch5_bonus = ["mcp==1.26.0"]
+jupyter = ["jupyterlab>=4.1.5", "ipywidgets>=8.1.8"]
+all = ["illustrated-agents[jupyter]"]
 
-all = ["illustrated-agents[jupyter, ch5_bonus]"]
+[project.scripts]
+tinyagent = "illustrated_agents.cli:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

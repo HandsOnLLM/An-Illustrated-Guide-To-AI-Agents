@@ -7,9 +7,6 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
 import illustrated_agents
-import nest_asyncio
-
-nest_asyncio.apply()
 
 SERVER_PATH = str(Path(illustrated_agents.__file__).parent / "chapters" / "ch5_mcp_server.py")
 
@@ -34,18 +31,18 @@ class Tools:
         """Run a registered tool.
 
         Arguments:
-            tool_call: A parsed tool call dict with "tool" and "args" keys.
+            tool_call: A parsed tool call dict with "tool" and "kwargs" keys.
         """
-        name, args = tool_call["tool"], tool_call.get("args", [])
+        name, kwargs = tool_call["tool"], tool_call.get("kwargs", {})
 
         # Handle registered tools
         if name in self.tools:
             tool_func = self.tools[name]["function"]
-            return tool_func(*args)
+            return tool_func(**kwargs)
 
         # Handle intermediate_answer (allows LLM to respond without a real tool)
         if name == "intermediate_answer":
-            return args
+            return kwargs
 
         return f"Tool '{name}' not found."
 
@@ -68,7 +65,7 @@ If needed, you can only use the following tools to assist you in completing task
 
 {self.descriptions}
 
-To use a tool, respond with JSON: {{"tool": "name", "args": [...]}}
+To use a tool, respond with JSON: {{"tool": "name", "kwargs": {{"param": "value"}}}}
 """
 
     @property

@@ -43,12 +43,12 @@ class Skills:
         """Activate a skill and return formatted observation.
 
         Arguments:
-            tool_call: A parsed tool call dict with "tool" and "args" keys.
+            tool_call: A parsed tool call dict with "tool" and "kwargs" keys.
 
         Returns:
             Formatted observation with skill instructions.
         """
-        name = tool_call["args"][0]
+        name = tool_call["kwargs"]["name"]
         if name in self.skills:
             instructions = self.skills[name]["instructions"]
             return f"Skill '{name}' activated. Follow these instructions:\n\n{instructions}"
@@ -60,8 +60,8 @@ class Skills:
         return f"""
 # Skills
 
-You have specialized skills available. To use a skill, call it like a tool:
-{{"tool": "use_skill", "args": ["skill_name"]}}
+You have specialized skills available. To use a skill, call it like a tool but without any arguments except the skill name, for example:
+{{"tool": "use_skill", "kwargs": {{"name": "skill_name"}}}}
 
 The skill will provide detailed instructions for completing the task.
 

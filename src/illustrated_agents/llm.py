@@ -1,17 +1,23 @@
-from litellm import completion
+import litellm
+import ollama
 
 
 class LLM:
-    def __init__(self, model: str, **kwargs):
+    def __init__(self, model: str, think: bool = False, **kwargs):
         """Initialize the LLM with the given model."""
         self.model = model
+        self.think = think
         self.kwargs = kwargs
 
     def generate(self, messages: list[dict]) -> str:
         """Generate a response from the LLM given a list of messages."""
-        # Call the chat completion function
-        response = completion(model=self.model, messages=messages, **self.kwargs)
 
-        # Extract and return the output text
-        output = response.choices[0].message.content
-        return output
+        # LiteLLM
+        if "/" in self.model:
+            response = litellm.completion(model=self.model, messages=messages, **self.kwargs)
+            return response.choices[0].message.content
+
+        # Native Ollama
+        else:
+            response = ollama.chat(model=self.model, messages=messages, think=self.think, **self.kwargs)
+            return response.message.content

@@ -4,18 +4,20 @@ from illustrated_agents.planning import ReAct
 from illustrated_agents.tools import Tools
 from illustrated_agents.reflection import Reflector
 from illustrated_agents.skills import Skills
+from illustrated_agents.display import Display
 
 
 class TinyAgent:
     """A minimal, modular, and educational agent framework."""
 
-    def __init__(self, llm: LLM, memory: Memory, tools: Tools, planner: ReAct, reflector: Reflector, skills: Skills):
+    def __init__(self, llm: LLM, memory: Memory, tools: Tools, planner: ReAct, reflector: Reflector, skills: Skills, display: Display):
         self.llm = llm
         self.memory = memory
         self.tools = tools
         self.planner = planner
         self.reflector = reflector
         self.skills = skills
+        self.display = display
 
         # Build system prompt with all components
         system_prompt = "You are a helpful AI agent.\n\n"
@@ -44,7 +46,9 @@ class TinyAgent:
     def _step(self) -> str | None:
         """Perform a single step."""
         # Generate response and add to memory
+        self.display("thinking")
         response = self.llm.generate(self.memory.get_messages())
+        self.display("response", response)
         self.memory.add("assistant", response)
 
         # Parse planner's response to extract action if needed
@@ -59,10 +63,11 @@ class TinyAgent:
     def _execute_action(self, action: str) -> str | None:
         """Execute a tool action."""
         tool_call = self.tools.parse_tool_call(action)
+        self.display("tool_call", tool_call)
 
         # Final answer ends the loop
         if tool_call["tool"] == "final_answer":
-            return tool_call.get("args", "")
+            return tool_call.get("kwargs", "")
 
         # Activate skill and extract the observation
         if tool_call["tool"] == "use_skill":
@@ -73,6 +78,7 @@ class TinyAgent:
             observation = self.tools.run_tool(tool_call)
 
         # Format the observation and add it to memory
+        self.display("observation", observation)
         obs_prompt = f"OBSERVATION: {action} -> {observation}"
         self.memory.add("user", obs_prompt)
 

@@ -17,7 +17,7 @@ class ReAct:
         return """
 # ReACT (Reason and Act)
 
-You are a ReAct agent that performs exactly ONE step per turn.
+You are a ReAct agent that performs exactly ONE step per turn. You can choose to either:
 Make sure to break down a given task into smaller steps and decide whether to use a tool or provide a final answer.
 
 ## ReACT Format
@@ -28,15 +28,15 @@ THOUGHT: [Your reasoning about what to do next]
 ACTION:
 {
     "tool": "a_tool_name",
-    "args": [...],
+    "kwargs": {"param": "value"},
 }
 
-If no tool is needed and you want to provide an intermediate answer, use:
+If no tool is needed and you want to provide an intermediate answer to continue with another step, use:
 
 ACTION:
 {
     "tool": "intermediate_answer",
-    "args": "insert your intermediate answer here"
+    "kwargs": "insert your intermediate answer here"
 }
 
 An observation will be provided after each action. You do not generate the observation yourself.
@@ -49,10 +49,11 @@ It is the only way to complete the task, else you will be stuck on a loop. So yo
 ACTION:
 {
     "tool": "final_answer",
-    "args": "insert your final answer here"
+    "kwargs": "insert your final answer here"
 }
 
-Only use the final_answer tool when you are completely done with all subtasks and have the final answer ready.
+Use the `final_answer` tool when you are completely done with all subtasks and have the final answer ready.
+You can also use `final_answer` to directly reply to a user's question without using any tools if you think you can answer it directly.
 """
 
     def parse(self, text: str) -> dict:

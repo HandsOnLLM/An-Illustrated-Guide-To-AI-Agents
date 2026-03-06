@@ -54,7 +54,7 @@ class TinyAgent:
 
         # Final answer ends the loop
         if tool_call["tool"] == "final_answer":
-            return tool_call.get("args", "")
+            return tool_call.get("kwargs", "")
 
         # Execute tool and extract the observation
         observation = self.tools.run_tool(tool_call)

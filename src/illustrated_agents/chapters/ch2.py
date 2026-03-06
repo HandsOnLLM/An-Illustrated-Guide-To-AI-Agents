@@ -32,9 +32,10 @@ class TinyAgent:
 llm_annotated = CodeAnnotator(
     LLM,
     annotations={
-        5: "'kwargs' are additional keyword arguments that can be passed to the underlying LLM API, such as 'api_key' or 'api_base'.",
-        10: "We call the 'completion' function with any additional keyword arguments which gives back the `response` object from the LLM API.",
-        13: "Although some LLMs return explicit tool calls or reasoning traces, we simply extract the answer only. This allows us to create Agents from any LLM, even those that don't support tool calls natively.",
+        6: "'kwargs' are additional keyword arguments that can be passed to the underlying LLM API, such as 'api_key' or 'api_base'.",
+        11: "We call the 'completion' function with any additional keyword arguments which gives back the `response` object from the LLM API.",
+        14: "Although some LLMs return explicit tool calls or reasoning traces, we simply extract the answer only. This allows us to create Agents from any LLM, even those that don't support tool calls natively.",
+        19: "Here, we also return only the content of the message.",
     },
 )
 
