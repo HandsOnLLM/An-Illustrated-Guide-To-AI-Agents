@@ -104,9 +104,7 @@ class Display:
         # Print ACTION
         elif event == "tool_call" and data:
             tool = data.get("tool")
-            if tool == "intermediate_answer":
-                console.print(f"  {label('ACTION', 'yellow')}[yellow]{data.get('kwargs', '')}[/]")
-            elif tool != "final_answer":
+            if tool != "final_answer":
                 args = data.get("kwargs", {})
                 args_str = ", ".join(f"{k}={v!r}" for k, v in args.items())
                 console.print(f"  {label('ACTION', 'yellow')}[yellow]{tool}({args_str})[/]")

@@ -40,10 +40,6 @@ class Tools:
             tool_func = self.tools[name]["function"]
             return tool_func(**kwargs)
 
-        # Handle intermediate_answer (allows LLM to respond without a real tool)
-        if name == "intermediate_answer":
-            return kwargs
-
         return f"Tool '{name}' not found."
 
     def has_tool_call(self, text: str) -> bool:
@@ -101,19 +97,15 @@ class MCPTools(Tools):
         for tool in mcp_tools:
             self.add_tool(
                 name=tool.name,
-                func=self._make_tool_caller(tool.name, tool.inputSchema),
+                func=self._make_tool_caller(tool.name),
                 description=tool.description,
             )
 
-    def _make_tool_caller(self, name: str, schema: dict):
+    def _make_tool_caller(self, name: str):
         """Create a callable that invokes the MCP tool."""
-        param_names = list(schema.get("properties", {}).keys())
 
-        def caller(*args):
-            # Convert positional args to named args since MCP expects named args and
-            # the original Tools interface uses positional args.
-            named_args = dict(zip(param_names, args))
-            return asyncio.run(self._call_tool(name, named_args))
+        def caller(**kwargs):
+            return asyncio.run(self._call_tool(name, kwargs))
 
         return caller
 

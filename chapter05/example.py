@@ -13,8 +13,8 @@ if __name__ == "__main__":
 
     # Register tools
     tools = Tools()
-    tools.add_tool("calculator", calculator, "Adds two numbers: calculator(a, b)")
-    tools.add_tool("get_weather", get_weather, "Gets weather: get_weather(city)")
+    tools.add_tool("calculator", calculator, "Adds two numbers: calculator(a: str, b: str)")
+    tools.add_tool("get_weather", get_weather, "Gets weather: get_weather(location: str)")
 
     # Create agent
     llm = LLM(model="ollama/gemma3:12b")

@@ -31,14 +31,6 @@ ACTION:
     "kwargs": {"param": "value"},
 }
 
-If no tool is needed and you want to provide an intermediate answer to continue with another step, use:
-
-ACTION:
-{
-    "tool": "intermediate_answer",
-    "kwargs": "insert your intermediate answer here"
-}
-
 An observation will be provided after each action. You do not generate the observation yourself.
 
 ## ReACT Completion

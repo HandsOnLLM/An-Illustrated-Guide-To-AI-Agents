@@ -73,9 +73,8 @@ react_prompt_annotated = CodeAnnotator(
         (6, 7): "Main explanation of the ReACT framework.",
         13: "<b>THOUGHT</b> - reasoning about next step.",
         (14, 19): "<b>ACTION</b> - tool call format.",
-        (22, 26): "<b>ACTION</b> - Intermediate answer format.",
-        28: "<b>OBSERVATION</b> - provided after action.",
-        (35, 39): "<b>ACTION</b> - Final answer format - must be used to complete the task.",
+        20: "<b>OBSERVATION</b> - provided after action.",
+        (27, 31): "<b>ACTION</b> - Final answer format - must be used to complete the task.",
     },
 )
 

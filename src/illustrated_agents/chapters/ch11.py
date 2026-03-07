@@ -31,9 +31,7 @@ class Display:
         # Print ACTION
         elif event == "tool_call" and data:
             tool = data.get("tool")
-            if tool == "intermediate_answer":
-                console.print(f"  [bold yellow]{'ACTION':<13}[/][yellow]{data.get('kwargs', '')}[/]")
-            elif tool != "final_answer":
+            if tool != "final_answer":
                 args = ", ".join(f"{k}={v!r}" for k, v in data.get("kwargs", {}).items())
                 console.print(f"  [bold yellow]{'ACTION':<13}[/][yellow]{tool}({args})[/]")
 

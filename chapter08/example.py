@@ -26,9 +26,9 @@ if __name__ == "__main__":
 
     # Math Agent
     math_tools = Tools()
-    math_tools.add_tool("add", add, "Adds two numbers: add(a, b)")
-    math_tools.add_tool("subtract", subtract, "Subtracts two numbers: subtract(a, b)")
-    math_tools.add_tool("multiply", multiply, "Multiplies two numbers: multiply(a, b)")
+    math_tools.add_tool("add", add, "Adds two numbers: add(a: str, b: str)")
+    math_tools.add_tool("subtract", subtract, "Subtracts two numbers: subtract(a: str, b: str)")
+    math_tools.add_tool("multiply", multiply, "Multiplies two numbers: multiply(a: str, b: str)")
     memory = Memory()
     math_agent = ToolAgent(llm=llm, tools=math_tools, memory=memory)
 
@@ -39,8 +39,8 @@ if __name__ == "__main__":
 
     # Orchestrator Agent
     tools = Tools()
-    tools.add_tool("get_weather", get_weather, "Gets weather: get_weather(city)")
-    tools.add_tool("ask_math_agent", ask_math_agent, "Asks the math specialist: ask_math_agent(question)")
+    tools.add_tool("get_weather", get_weather, "Gets weather: get_weather(location: str)")
+    tools.add_tool("ask_math_agent", ask_math_agent, "Asks the math specialist: ask_math_agent(question: str)")
     memory = Memory()
     react = ReAct(max_steps=10)
     orchestrator_agent = TinyAgent(llm=llm, tools=tools, memory=memory, planner=react)

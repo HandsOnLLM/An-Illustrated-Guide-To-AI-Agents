@@ -101,9 +101,6 @@ run_tool_annotated = CodeAnnotator(
     annotations={
         7: "The tool name and possible arguments are extracted from the parsed tool call.",
         (11, 12): "Tools are looked up in the registry and executed with the provided arguments.",
-        (15, 16): """
-We also handle the special 'intermediate_answer' tool which allows the LLM to respond without calling a real tool. 
-We cover this in Chapter 6 when we talk about planning and reflection.""",
     },
 )
 
@@ -117,7 +114,7 @@ standardized way to query an MCP server for its available tools. This will alway
 tool names, descriptions, and parameter specifications.""",
         (25, 30): """The listed tools are added to the registry that we defined previously in Chapter 5 using the `Tools` class. 
 Here, the `_make_tool_caller` creates a callable function for each tool that knows how to call the MCP server with the correct parameters.""",
-        (46, 50): """As before, the MCP Server is called and the corresponding tool, together with their arguments, are called using 
+        (42, 46): """As before, the MCP Server is called and the corresponding tool, together with their arguments, are called using 
 the MCP Server. The execution is done with `session.call_tool` which again is a standardized function according to the MCP Protocol.""",
     },
 )
