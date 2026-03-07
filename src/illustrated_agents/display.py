@@ -12,32 +12,77 @@ from rich.rule import Rule
 
 console = Console()
 
-LOGO = """\
-[bold cyan]
+NAME = """
+██████ ██ ███  ██ ██  ██   ▄████▄  ▄████  ██████ ███  ██ ██████ 
+  ██   ██ ██ ▀▄██  ▀██▀    ██▄▄██ ██  ▄▄▄ ██▄▄   ██ ▀▄██   ██   
+  ██   ██ ██   ██   ██     ██  ██  ▀███▀  ██▄▄▄▄ ██   ██   ██    
+"""  # ANSI Compact
+# Dolphin color palette
+_DK = "#3a5068"  # dark (back, fin, tail)
+_DM = "#6a8498"  # medium (body transition, head)
+_DL = "#a0b8c8"  # light (belly, snout)
 
-                 ++
-                 +++++++++++++
-             ++++++--++----++++++
-           +++++--+++###++++++++++++
-         ++++--++++#######+++++++++++
-       ++++-+++##########++++-++++++++
-      +++-++#################++++++++++
-     +++++####################+++----++
-    ++++#######++++# ####++     +++++++
-    +++####+++      ###+-           +-+
-    ++#####      ####+
-   +#####
-   +####
-+++####
-######
-  ####
-    ##+
-     ##+
-      #+
-       +
+LOGO = f"""
+[bold {_DK}]                     ▓▓[/]
+[bold {_DK}]                       ▓▓[/][bold {_DM}]▒▒▒▒▒▒▒▒▒[/]
+[bold {_DL}]                   ▒▒▒▒▒▒[/][bold {_DK}]▓[/][bold {_DM}]▒▒▒▒▒▒▒▒▒▒▒▒▒[/]
+[bold {_DL}]                ▒▒▒▒▒▒▒▒▒▒[/][bold {_DK}]▓▓▓[/][bold {_DM}]▒▒▒▒▒▒▒▒▒▒▒▒▒[/]
+[bold {_DL}]             ▒▒▒▒▒▒▒▒▒▒▒▒▒[/][bold {_DK}]▓▓██▓[/][bold {_DM}]▒▒▒▒▒▒▒▒▒▒▒▒▓[/]
+[bold {_DL}]           ▒▒▒▒▒▒▒▒▒▒▒▒▒[/][bold {_DK}]▓███████▓[/][bold {_DM}]▒▒▒▓▓▓▓▓▓▒▒▓▒[/]
+[bold {_DL}]          ▒▒▒▒▒▒▒▒▒[/][bold {_DK}]▓▓▓█████████▓[/][bold {_DM}]▒▒▒▒▒▒▒▒▒▓▓▒▒▓▓[/]
+[bold {_DL}]         ▒▒▒▒▒▒[/][bold {_DK}]▓▓▓█████████████▓▓▓▓▓▓[/][bold {_DM}]▒▒▒▒▒▒▒▒▒▓▓[/]
+[bold {_DL}]       ▒▒▒▒▒▒[/][bold {_DK}]▓███████████████████▓▓▓▓▓▓[/][bold {_DM}]▒▒▒▒▒▒▒▒▓[/]
+[bold {_DL}]      ▒▒▒▒▒[/][bold {_DK}]▓███████████████████████▓▓▓▓▓[/][bold {_DM}]▒▒▒▒▒▒▒▓▓[/]
+[bold {_DL}]     ▒▒▒▒[/][bold {_DK}]▓▓███████▓▓▓▓▓▓▓ █████▓[/][bold {_DM}]▒▒      ▓▓▓▒▒▒▒▒[/]
+[bold {_DL}]     ▒▒▒[/][bold {_DK}]▓██████▓▓▓       ▓███▓[/][bold {_DM}]▒▒           ▓▓▒▒▒▒[/]
+[bold {_DL}]     ▒▒[/][bold {_DK}]▓████▓▓▓        ▓██▓▓[/][bold {_DM}]▒▒                ▓▒[/]
+[bold {_DL}]    ▒[/][bold {_DK}]▓▓████▓▓        ▓▓▓▓[/]
+[bold {_DK}]    ▓▓████▓[/]
+[bold {_DK}]    ▓████▓[/]
+[bold {_DK}]   ▓▓███▓[/]
+[bold {_DK}]▓██▓███▓[/]
+[bold {_DK}]▓▓▓███▓[/]
+[bold {_DK}]  ▓▓██▓▓[/]
+[bold {_DK}]    ▓▓▓▓▒[/]
+[bold {_DK}]      ▓▓▓▒[/]
+[bold {_DK}]       ▓▓▒[/]
+[bold {_DK}]        ▓▓[/]
+[bold {_DK}]         ▓[/]
+{NAME}"""  # https://www.asciiart.eu/image-to-ascii -- Book Cover -- Manually edited
 
-            ~~~~~~~~~~~~~~~~~~~[/]
-[bold blue]            T i n y A g e n t[/]"""
+# Flamingo color palette
+_FH = "#f5c4bc"  # head
+_FN = "#f0b0a8"  # neck
+_FD = "#e8a098"  # lower neck
+_FB = "#d4a090"  # beak base
+_FK = "#424242"  # beak tip
+_FE = "#000000"  # eye
+
+FLAMINGO_LOGO = f"""
+      [bold {_FH}]            ░░░░░░░░░░[/]
+      [bold {_FH}]         ▒▒░░░░░░░░░░░░░[/]
+      [bold {_FH}]        ▒▒▒▒▒▒▒▒░▒▒░░░░░░[/]
+      [bold {_FH}]      ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░[/]
+      [bold {_FH}]      ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒[/][bold {_FE}]██[/][bold {_FH}]▒▒▒[/]
+      [bold {_FN}]     ▒▒▒▒▒▒[/][bold {_FB}]▓▓▓▓[/][bold {_FN}]▒▒▒▒▒▒▒▒▒▒▒▒[/]
+      [bold {_FN}]    ▒▒▒▒▒▒▒[/][bold {_FB}]▓▓▓▓▓▓[/][bold {_FN}]▒▒▒▒▒▒▒░░░[/]
+      [bold {_FN}]    ▒▒▒▒▒▒▒▒   [/][bold {_FB}]▓▓▓▓[/][bold {_FN}]▒▒▒▒▒▒▒░░[/]
+      [bold {_FN}]    ▒▒▒▒▒▒▒▒      [/][bold {_FK}]▓▓▓▓[/][bold {_FN}]▒▒▒▒▒▒░[/]
+      [bold {_FD}]    ▒▒▒▒▒▒▒▒          [/][bold {_FK}]▓▒▒▓██▓▓[/]
+      [bold {_FD}]    ▒▒▒▒▒▒▒░░          [/][bold {_FK}]███████[/]
+      [bold {_FD}]    ▒▒▒▒▒▒▒░░░░        [/][bold {_FK}]██████[/]
+      [bold {_FD}]    ▓▓▒▒▒▒▒▒▒░░░░      [/][bold {_FK}]██████[/]
+      [bold {_FD}]      ▓▒▒▒▒▒▒▒▒░░░░░   [/][bold {_FK}]█████[/]
+      [bold {_FD}]       ▓▓▒▒▒▒▒▒▒▒▒░░░░ [/][bold {_FK}]████[/]
+      [bold {_FD}]         ▓▓▒▒▒▒▒▒▒▒▒▒▒▒[/][bold {_FK}]██[/]
+      [bold {_FD}]           ▓▓▒▒▒▒▒▒▒▒▒▒▒[/]
+      [bold {_FD}]             ▓▓▒▒▒▒▒▒▒▒▒▒▒[/]
+      [bold {_FD}]              ▓▓▓▒▒▒▒▒▒▒▒▒[/]
+      [bold {_FD}]               ▓▓▓▒▒▒▒▒▒▒▒▒[/]
+      [bold {_FD}]                ▓▓▓▒▒▒▒▒▒▒▒[/]
+      [bold {_FD}]                ▓▓▓▒▒▒▒▒▒▒▒▒[/]
+      [bold {_FD}]                ▓▓▓▒▒▒▒▒▓▓▓▓[/]
+{NAME}"""  # https://www.asciiart.eu/image-to-ascii -- Flamingo in Ch12 -- Manually edited
 
 
 def label(name: str, style: str) -> str:
@@ -77,13 +122,30 @@ THINKING_MESSAGES = [
     "Deep dive...",
 ]
 
+FLAMINGO_THINKING_MESSAGES = [
+    "Standing on one leg...",
+    "Preening feathers...",
+    "Wading through data...",
+    "Turning pink...",
+    "Flocking together...",
+    "Filter feeding...",
+    "Stretching wings...",
+    "Balancing act...",
+    "Ruffling feathers...",
+    "Doing the flamingo dance...",
+    "Looking fabulous...",
+    "Strutting around...",
+    "Dipping beak...",
+]
+
 
 class Display:
     """Handles agent events with Rich formatting."""
 
-    def __init__(self):
+    def __init__(self, pink=False):
         self._live = None
         self._animating = False
+        self._pink = pink
 
     def __call__(self, event: str, data: str | dict = None) -> None:
         # Animate "thinking"
@@ -91,7 +153,7 @@ class Display:
             self._animating = True
             self._live = Live(console=console, refresh_per_second=8, transient=True)
             self._live.start()
-            self._thinking_msg = random.choice(THINKING_MESSAGES)
+            self._thinking_msg = random.choice(FLAMINGO_THINKING_MESSAGES if self._pink else THINKING_MESSAGES)
             threading.Thread(target=self._animate_thinking, daemon=True).start()
 
         # Print THOUGHT

@@ -1,5 +1,6 @@
 """Interactive CLI for TinyAgent using Rich."""
 
+import argparse
 import os
 
 from dotenv import load_dotenv
@@ -9,7 +10,7 @@ from rich.table import Table
 
 import illustrated_agents
 from illustrated_agents import LLM, Memory, Tools, ReAct, Reflector, Skills, TinyAgent
-from illustrated_agents.display import label, Display, LOGO
+from illustrated_agents.display import label, Display, LOGO, FLAMINGO_LOGO
 
 load_dotenv()
 console = Console()
@@ -84,8 +85,12 @@ def handle_command(cmd, agent):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--pink", action="store_true", help=argparse.SUPPRESS)
+    args = parser.parse_args()
+
     model = os.getenv("MODEL", "ollama/gemma3:12b")
-    display = Display()
+    display = Display(pink=args.pink)
 
     # Tools
     tools = Tools()
@@ -111,7 +116,7 @@ def main():
     # Display welcome message with model, tools, and skills
     tool_names = ", ".join(tools.tools.keys())
     skill_names = ", ".join(skills.skills.keys())
-    console.print(LOGO)
+    console.print(FLAMINGO_LOGO if args.pink else LOGO)
     console.print(f"\n  [dim]Model:[/]  {model}")
     console.print(f"  [dim]Tools:[/]  {tool_names}")
     console.print(f"  [dim]Skills:[/] {skill_names}")
@@ -148,7 +153,7 @@ def main():
         try:
             result = agent.run(query)
             display._stop_thinking()
-            console.print(f"\n  :dolphin: [bold cyan]ANSWER[/]    {result}\n")
+            console.print(f"\n  :flamingo: [bold magenta]ANSWER[/]    {result}\n" if args.pink else f"\n  :dolphin: [bold cyan]ANSWER[/]    {result}\n")
         except Exception as e:
             display._stop_thinking()
             console.print(f"  {label('ERROR', 'red')}[red]{e}[/]\n")
