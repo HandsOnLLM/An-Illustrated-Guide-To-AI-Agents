@@ -9,6 +9,77 @@ from illustrated_agents.chapters import ch9
 console = Console()
 
 
+class XMLReAct(ReAct):
+    """ReACT module."""
+
+    @property
+    def prompt(self) -> str:
+        return """
+# ReACT (Reason and Act)
+
+You are a ReAct agent that performs exactly ONE step per turn.
+Make sure to break down a given task into smaller steps and decide whether to use a tool or provide a final answer.
+
+## ReACT Format
+
+You use the following format for each step:
+
+THOUGHT: [Your reasoning about what to do next]
+ACTION:
+<tool>a_tool_name</tool>
+<param_name>value</param_name>
+
+An observation will be provided after each action. You do not generate the observation yourself.
+
+## ReACT Completion
+
+To provide the final answer to the task, use the final_answer tool.
+It is the only way to complete the task, else you will be stuck on a loop. So your final output should look like this:
+
+ACTION:
+<tool>final_answer</tool>
+<answer>insert your final answer here</answer>
+
+Use the `final_answer` tool when you are completely done with all subtasks and have the final answer ready.
+You can also use `final_answer` to directly reply to a user's question without using any tools if you think you can answer it directly.
+"""
+
+
+class XMLTools(Tools):
+    """Tool registry for the Agent."""
+
+    @property
+    def prompt(self):
+        return f"""
+# Tools
+
+If needed, you can only use the following tools to assist you in completing tasks:
+
+{self.descriptions}
+
+To use a tool, respond with XML tags:
+<tool>tool_name</tool>
+<param_name>value</param_name>
+"""
+
+    def has_tool_call(self, text: str) -> bool:
+        return "<tool>" in text
+
+    def parse_tool_call(self, text: str) -> dict:
+        """Parse an XML tool call from text."""
+        # Extract the tool name
+        tool = re.search(r"<tool>(.*?)</tool>", text, re.DOTALL).group(1).strip()
+
+        # Extract parameters as kwargs
+        kwargs = {}
+        for match in re.finditer(r"<(\w+)>(.*?)</\1>", text, re.DOTALL):
+            name, value = match.group(1), match.group(2).strip()
+            if name != "tool":
+                kwargs[name] = value
+
+        return {"tool": tool, "kwargs": kwargs}
+
+
 class Display:
     """Formats agent events for the terminal."""
 
@@ -106,7 +177,7 @@ class TinyAgent:
 
         # Final answer ends the loop
         if tool_call["tool"] == "final_answer":
-            return tool_call.get("kwargs", "")
+            return tool_call["kwargs"]["answer"]
 
         # Activate skill and extract the observation
         if tool_call["tool"] == "use_skill":
@@ -162,6 +233,20 @@ def chat(agent):
 
 
 tinyagents_diff = DiffViewer(ch9.TinyAgent, TinyAgent, "ch9.TinyAgent", "ch11.TinyAgent")
+react_diff = DiffViewer(ReAct.prompt, XMLReAct.prompt, "ReAct", "XMLReAct")
+tools_diff = DiffViewer(Tools.prompt, XMLTools.prompt, "Tools", "XMLTools")
+
+
+tools_annotated = CodeAnnotator(
+    XMLTools,
+    annotations={
+        (13, 15): "The prompt now instructs the agent to use XML tags to call tools instead of JSON.",
+        19: "We now search for <tool> tags instead of JSON tool calls.",
+        24: "Since there will be only a single tool call per response, we can simplify the parsing logic to just look for the first <tool> tag.",
+        (27, 31): "There might be multiple keyword arguments (kwargs) in the tool call that need to be extracted.",
+    },
+)
+
 
 display_annotated = CodeAnnotator(
     Display.__call__,

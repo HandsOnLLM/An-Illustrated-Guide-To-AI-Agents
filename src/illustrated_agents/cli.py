@@ -9,25 +9,13 @@ from rich.console import Console
 from rich.table import Table
 
 import illustrated_agents
-from illustrated_agents import LLM, Memory, Tools, ReAct, Reflector, Skills, TinyAgent
+from illustrated_agents import LLM, Memory, Reflector, Skills
 from illustrated_agents.display import label, Display, LOGO, FLAMINGO_LOGO
+from illustrated_agents.chapters.ch11_tools import create_code_tools
+from illustrated_agents.chapters.ch11 import XMLReAct, XMLTools, TinyAgent
 
 load_dotenv()
 console = Console()
-
-
-# --- Demo tools ---
-
-
-def calculator(a: str, b: str) -> float:
-    return float(a) + float(b)
-
-
-def get_weather(location: str) -> str:
-    return f"Weather in {location}: Sunny, 72F"
-
-
-# --- Slash commands ---
 
 COMMANDS = {
     "/help": "Show available commands",
@@ -93,10 +81,10 @@ def main():
     display = Display(pink=args.pink)
 
     # Tools
-    tools = Tools()
-    tools.add_tool("calculator", calculator, "Adds two numbers: calculator(a: str, b: str)")
-    tools.add_tool("get_weather", get_weather, "Gets weather: get_weather(location: str)")
-
+    # tools = Tools()
+    # tools.add_tool("calculator", calculator, "Adds two numbers: calculator(a: str, b: str)")
+    # tools.add_tool("get_weather", get_weather, "Gets weather: get_weather(location: str)")
+    tools = create_code_tools(tools=XMLTools())
     # Skills
     skills = Skills()
     file_analyzer_path = Path(illustrated_agents.__file__).parent / "skills" / "file_analyzer" / "SKILL.md"
@@ -107,7 +95,7 @@ def main():
         llm=LLM(model=model),
         memory=Memory(),
         tools=tools,
-        planner=ReAct(max_steps=10),
+        planner=XMLReAct(max_steps=10),
         reflector=Reflector(interval=20),
         skills=skills,
         display=display,
@@ -153,7 +141,11 @@ def main():
         try:
             result = agent.run(query)
             display._stop_thinking()
-            console.print(f"\n  :flamingo: [bold magenta]ANSWER[/]    {result}\n" if args.pink else f"\n  :dolphin: [bold cyan]ANSWER[/]    {result}\n")
+            console.print(
+                f"\n  :flamingo: [bold magenta]ANSWER[/]    {result}\n"
+                if args.pink
+                else f"\n  :dolphin: [bold cyan]ANSWER[/]    {result}\n"
+            )
         except Exception as e:
             display._stop_thinking()
             console.print(f"  {label('ERROR', 'red')}[red]{e}[/]\n")

@@ -8,6 +8,15 @@ from pygments.formatters import HtmlFormatter
 from pygments.lexers import PythonLexer
 
 
+def _get_source(source):
+    """Extract source code, optionally for a specific method or property."""
+    if type(source) is property:
+        src = inspect.getsource(source.fget)
+    else:
+        src = inspect.getsource(source)
+    return textwrap.dedent(src)
+
+
 class DiffViewer:
     """
     Show a GitHub-style, syntax-highlighted diff of two imported classes
@@ -23,8 +32,8 @@ class DiffViewer:
 
     def _repr_html_(self):
         # 1. Extract and normalize source
-        old_src = textwrap.dedent(inspect.getsource(self.old_cls))
-        new_src = textwrap.dedent(inspect.getsource(self.new_cls))
+        old_src = _get_source(self.old_cls)
+        new_src = _get_source(self.new_cls)
 
         # 2. Generate unified diff
         diff = "\n".join(
@@ -72,16 +81,8 @@ class CodeAnnotator:
         self.style = style
         self.annotations = {(k, k) if isinstance(k, int) else tuple(k): v for k, v in (annotations or {}).items()}
 
-    def _get_source(self):
-        """Extract source code, optionally for a specific method or property."""
-        if type(self.source) is property:
-            src = inspect.getsource(self.source.fget)
-        else:
-            src = inspect.getsource(self.source)
-        return textwrap.dedent(src)
-
     def _repr_html_(self):
-        src = self._get_source()
+        src = _get_source(self.source)
         hl_lines = [ln for start, end in self.annotations for ln in range(start, end + 1)]
 
         uid = f"ca-{uuid.uuid4().hex[:8]}"

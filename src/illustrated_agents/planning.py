@@ -17,7 +17,7 @@ class ReAct:
         return """
 # ReACT (Reason and Act)
 
-You are a ReAct agent that performs exactly ONE step per turn. You can choose to either:
+You are a ReAct agent that performs exactly ONE step per turn.
 Make sure to break down a given task into smaller steps and decide whether to use a tool or provide a final answer.
 
 ## ReACT Format
