@@ -173,7 +173,8 @@ class Display:
 
         # Print OBSERVATION
         elif event == "observation":
-            console.print(f"  {label('OBSERVATION', 'green')}{data}\n")
+            trimmed_observation = data[:250] + "\n[TRUNCATED]" if len(data) > 250 else data
+            console.print(f"  {label('OBSERVATION', 'green')}{trimmed_observation}\n")
             console.print(Rule(style="dim"), end="\n\n")
 
     def _animate_thinking(self) -> None:

@@ -12,7 +12,7 @@ import illustrated_agents
 from illustrated_agents import LLM, Memory, Reflector, Skills
 from illustrated_agents.display import label, Display, LOGO, FLAMINGO_LOGO
 from illustrated_agents.chapters.ch11_tools import create_code_tools
-from illustrated_agents.chapters.ch11 import XMLReAct, XMLTools, TinyAgent
+from illustrated_agents.chapters.ch11 import XMLReAct, TinyAgent
 
 load_dotenv()
 console = Console()
@@ -80,12 +80,8 @@ def main():
     model = os.getenv("MODEL", "ollama/gemma3:12b")
     display = Display(pink=args.pink)
 
-    # Tools
-    # tools = Tools()
-    # tools.add_tool("calculator", calculator, "Adds two numbers: calculator(a: str, b: str)")
-    # tools.add_tool("get_weather", get_weather, "Gets weather: get_weather(location: str)")
-    tools = create_code_tools(tools=XMLTools())
-    # Skills
+    # Tools / Skills
+    tools = create_code_tools()
     skills = Skills()
     file_analyzer_path = Path(illustrated_agents.__file__).parent / "skills" / "file_analyzer" / "SKILL.md"
     skills.load_from_file(file_analyzer_path)

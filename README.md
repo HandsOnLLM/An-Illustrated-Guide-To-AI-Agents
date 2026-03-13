@@ -7,6 +7,8 @@ Welcome! In this repository you will find the code for the book [An Illustrated 
 
 <p align="center"><b><i>"Build an Agent From Scratch!"</i></b></p>
 
+![images/tinyagent.gif](images/tinyagent.gif)
+
 You will build your own Agentic Framework from the ground up using nothing more than lightweight dependencies: 
 
 > `LiteLLM` (cloud LLMs), `Ollama` (local LLMs), `MCP`, `Rich` (cli!) `pygments` (for nice styling 😉)
