@@ -1,7 +1,7 @@
 from illustrated_agents import LLM, Memory, Tools, ReAct
 from illustrated_agents.skills import Skills
 from illustrated_agents.reflection import Reflector
-from illustrated_agents.utils import DiffViewer, CodeAnnotator
+from illustrated_agents.utils import DiffViewer, CodeAnnotator, ChapterOverview
 from illustrated_agents.chapters import ch6_reflection
 
 
@@ -76,6 +76,20 @@ class TinyAgent:
         self.memory.add("user", obs_prompt)
 
         return None
+
+
+what_we_built = ChapterOverview(
+    [
+        ("agent.py", "updated", "Added instructions in the system prompt for skill activiation."),
+        ("llm.py", None, ""),
+        ("memory.py", None, ""),
+        ("planning.py", None, ""),
+        ("reflection.py", None, ""),
+        ("skills.py", "new", "Instruction-based skills"),
+        ("toolbox.py", None, ""),
+        ("tools.py", None, ""),
+    ]
+)
 
 
 tinyagents_diff = DiffViewer(ch6_reflection.TinyAgent, TinyAgent, "ch6_reflection.TinyAgent", "ch6_skills.TinyAgent")

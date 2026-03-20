@@ -60,9 +60,7 @@ class Skills:
         return f"""
 # Skills
 
-You have specialized skills available. To use a skill, call it like a tool but without any arguments except the skill name, for example:
-{{"tool": "use_skill", "kwargs": {{"name": "skill_name"}}}}
-
+You have specialized skills available. To use a skill, call it like a tool but without any arguments except the skill name.
 The skill will provide detailed instructions for completing the task.
 
 Available skills:

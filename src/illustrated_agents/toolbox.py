@@ -7,8 +7,10 @@ Code tools require a workspace for filesystem safety.
 import subprocess
 import sys
 from pathlib import Path
-
-from illustrated_agents.chapters.ch11 import XMLTools
+from pygments import highlight
+from pygments.lexers import PythonLexer
+from pygments.formatters import TerminalFormatter
+from illustrated_agents import XMLTools
 
 
 # --- Simple Tools ---
@@ -125,6 +127,11 @@ def create_code_tools(workspace: str = ".") -> XMLTools:
             return result.stdout.strip() or "(no output)"
         except subprocess.TimeoutExpired:
             return "Error: Code execution timed out (30s limit)."
+        
+    def show_python(code: str):
+        """Print syntax-highlighted Python code."""
+        print(highlight(code, PythonLexer(), TerminalFormatter()))
+        return "Shown code with syntax highlighting."
 
     tools = XMLTools(requires_approval=["execute_python", "write_file"])
     tools.add_tool("read_file", read_file, "Read a file: read_file(path: str)")
@@ -134,4 +141,5 @@ def create_code_tools(workspace: str = ".") -> XMLTools:
     tools.add_tool("search_files", search_files, "Search text in files: search_files(query: str, directory: str)")
     tools.add_tool("write_file", write_file, "Write a file: write_file(path: str, content: str)")
     tools.add_tool("execute_python", execute_python, "Run Python code: execute_python(code: str)")
+    tools.add_tool("show_python", show_python, "Display Python code with syntax highlighting: show_python(code: str)")
     return tools

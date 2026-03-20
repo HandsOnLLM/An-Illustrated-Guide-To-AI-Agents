@@ -67,7 +67,7 @@ class TinyAgent:
 
         # Final answer ends the loop
         if tool_call["tool"] == "final_answer":
-            return tool_call.get("kwargs", "")
+            return tool_call["kwargs"]["answer"]
 
         # Activate skill and extract the observation
         if tool_call["tool"] == "use_skill":

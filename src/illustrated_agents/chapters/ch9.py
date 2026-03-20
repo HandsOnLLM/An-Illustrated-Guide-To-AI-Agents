@@ -1,5 +1,5 @@
 from illustrated_agents import LLM, Memory, Tools, ReAct, Reflector, Skills
-from illustrated_agents.utils import DiffViewer
+from illustrated_agents.utils import DiffViewer, ChapterOverview
 from illustrated_agents.chapters import ch4, ch6_skills
 
 
@@ -91,6 +91,20 @@ class Memory:
     def get_messages(self) -> list[dict]:
         """Get all messages."""
         return self.messages
+
+
+what_we_built = ChapterOverview(
+    [
+        ("agent.py", "updated", "Added the `image_url` parameter to process images."),
+        ("llm.py", None, ""),
+        ("memory.py", "updated", "Track images in the conversation history."),
+        ("reflection.py", None, ""),
+        ("planning.py", None, ""),
+        ("skills.py", None, ""),
+        ("toolbox.py", None, ""),
+        ("tools.py", None, ""),
+    ]
+)
 
 
 tinyagents_diff = DiffViewer(ch6_skills.TinyAgent, TinyAgent, "ch6.TinyAgent", "ch9.TinyAgent")

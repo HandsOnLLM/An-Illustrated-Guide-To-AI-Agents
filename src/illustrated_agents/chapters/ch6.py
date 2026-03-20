@@ -1,6 +1,5 @@
 from illustrated_agents import LLM, Memory, Tools, ReAct
-from illustrated_agents.utils import DiffViewer
-from illustrated_agents.utils import CodeAnnotator
+from illustrated_agents.utils import DiffViewer, CodeAnnotator, ChapterOverview
 from illustrated_agents.chapters import ch5
 
 
@@ -62,6 +61,18 @@ class TinyAgent:
         self.memory.add("user", obs_prompt)
 
         return None
+
+
+what_we_built = ChapterOverview(
+    [
+        ("agent.py", "updated", "Autonomy with a for-loop ;) ..."),
+        ("llm.py", None, ""),
+        ("memory.py", None, ""),
+        ("planning.py", "new", "Added the ReAct (Reason and Act) framework"),
+        ("toolbox.py", None, ""),
+        ("tools.py", None, ""),
+    ]
+)
 
 
 tinyagents_diff = DiffViewer(ch5.TinyAgent, TinyAgent, "ch5.TinyAgent", "ch6.TinyAgent")

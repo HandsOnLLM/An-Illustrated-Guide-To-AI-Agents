@@ -1,7 +1,9 @@
 import json
-from typing import Callable
+import re
 import sys
 import asyncio
+
+from typing import Callable
 from pathlib import Path
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
@@ -116,3 +118,51 @@ class MCPTools(Tools):
                 await session.initialize()
                 result = await session.call_tool(name, args)
                 return result.content[0].text
+
+
+class XMLTools(Tools):
+    """Tool registry for the Agent with XML parsing and human-in-the-loop approval."""
+
+    def __init__(self, requires_approval: list[str] = []):
+        self.tools = {}
+        self.requires_approval = requires_approval
+
+    def run_tool(self, tool_call: dict) -> str:
+        """Run a tool, with human approval for dangerous tools."""
+        name, kwargs = tool_call["tool"], tool_call.get("kwargs", {})
+
+        # Human-in-the-loop: ask before running dangerous tools
+        if name in self.requires_approval:
+            response = input(f"Allow {name}? [y/N] ").strip().lower()
+            if response not in ("y", "yes"):
+                return f"Tool '{name}' was denied by the user."
+
+        return super().run_tool(tool_call)
+
+    @property
+    def prompt(self) -> str:
+        return f"""
+# Tools
+
+If needed, you can only use the following tools to assist you in completing tasks:
+
+{self.descriptions}
+"""
+
+    def has_tool_call(self, text: str) -> bool:
+        """Check whether there is a tool call in `text`."""
+        return "<tool>" in text
+
+    def parse_tool_call(self, text: str) -> dict:
+        """Parse an XML tool call from text."""
+        # Extract the tool name
+        tool = re.search(r"<tool>(.*?)</tool>", text, re.DOTALL).group(1).strip()
+
+        # Extract parameters as kwargs
+        kwargs = {}
+        for match in re.finditer(r"<(\w+)>(.*?)</\1>", text, re.DOTALL):
+            name, value = match.group(1), match.group(2).strip()
+            if name != "tool":
+                kwargs[name] = value
+
+        return {"tool": tool, "kwargs": kwargs}

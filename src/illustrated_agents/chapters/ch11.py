@@ -1,15 +1,13 @@
 import re
 from rich.console import Console
 from rich.rule import Rule
+from rich.syntax import Syntax
 
 from illustrated_agents import LLM, Memory, Tools, ReAct, Reflector, Skills
-from illustrated_agents.utils import CodeAnnotator, DiffViewer
+from illustrated_agents.utils import CodeAnnotator, DiffViewer, ChapterOverview
 from illustrated_agents.chapters import ch9
 
 console = Console()
-
-
-from illustrated_agents.planning import ReAct
 
 
 class XMLReAct(ReAct):
@@ -63,6 +61,7 @@ class XMLTools(Tools):
 
         # Human-in-the-loop: ask before running dangerous tools
         if name in self.requires_approval:
+            kwargs = "" if name != "execute_python" else kwargs
             response = input(f"Allow {name}({kwargs})? [y/N] ").strip().lower()
             if response not in ("y", "yes"):
                 return f"Tool '{name}' was denied by the user."
@@ -116,9 +115,14 @@ class Display:
         # Print ACTION
         elif event == "tool_call" and data:
             tool = data.get("tool")
+            kwargs = data.get("kwargs", {})
             if tool != "final_answer":
-                args = ", ".join(f"{k}={v!r}" for k, v in data.get("kwargs", {}).items())
-                console.print(f"  [bold yellow]{'ACTION':<13}[/][yellow]{tool}({args})[/]")
+                if tool == "execute_python":
+                    console.print(f"  [bold yellow]{'ACTION':<13}[/][yellow]{tool}[/]")
+                    console.print(Syntax(kwargs.get("code", ""), "python", line_numbers=True))
+                else:
+                    args = ", ".join(f"{k}={v!r}" for k, v in kwargs.items())
+                    console.print(f"  [bold yellow]{'ACTION':<13}[/][yellow]{tool}({args})[/]")
 
         # Print OBSERVATION
         elif event == "observation":
@@ -239,6 +243,21 @@ def chat(agent):
         except Exception as e:
             display.stop()
             console.print(f"  [bold red]{'ERROR':<13}[/][red]{e}[/]\n")
+
+
+what_we_built = ChapterOverview(
+    [
+        ("agent.py", "updated", "Added printing to the `Display` to see its intermediate steps."),
+        ("display.py", "new", "A new `Display` class to format the agent's THOUGHTS, ACTIONS, and OBSERVATIONS."),
+        ("llm.py", None, ""),
+        ("memory.py", None, ""),
+        ("planning.py", "updated", "Added XML-based instructions for tool calling."),
+        ("reflection.py", None, ""),
+        ("skills.py", None, ""),
+        ("toolbox.py", "updated", "Added tools for Coding Agents."),
+        ("tools.py", "updated", "Added XML-based tool parsing and calling with human-in-the-loop checks."),
+    ]
+)
 
 
 tinyagents_diff = DiffViewer(ch9.TinyAgent, TinyAgent, "ch9.TinyAgent", "ch11.TinyAgent")

@@ -1,4 +1,4 @@
-from illustrated_agents.utils import CodeAnnotator
+from illustrated_agents.utils import CodeAnnotator, ChapterOverview
 
 
 class TinyAgent:
@@ -25,6 +25,13 @@ class TinyAgent:
         """Execute a tool action."""
         # Placeholder - will be implemented in later chapters
         return f"Executed action: {action}"
+
+
+what_we_built = ChapterOverview(
+    [
+        ("agent.py", "new", "`TinyAgent` skeleton - The start of something cool ;)"),
+    ]
+)
 
 
 agent_annotated = CodeAnnotator(

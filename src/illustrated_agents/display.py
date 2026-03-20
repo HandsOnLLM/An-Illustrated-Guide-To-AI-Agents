@@ -9,6 +9,7 @@ from rich.console import Console
 from rich.live import Live
 from rich.text import Text
 from rich.rule import Rule
+from rich.syntax import Syntax
 
 console = Console()
 
@@ -166,15 +167,19 @@ class Display:
         # Print ACTION
         elif event == "tool_call" and data:
             tool = data.get("tool")
+            kwargs = data.get("kwargs", {})
             if tool != "final_answer":
-                args = data.get("kwargs", {})
-                args_str = ", ".join(f"{k}={v!r}" for k, v in args.items())
-                console.print(f"  {label('ACTION', 'yellow')}[yellow]{tool}({args_str})[/]")
+                if tool == "execute_python":
+                    console.print(f"  {label('ACTION', 'yellow')}[yellow]{tool}[/]")
+                    console.print(Syntax(kwargs.get("code", ""), "python", line_numbers=True))
+                else:
+                    args_str = ", ".join(f"{k}={v!r}" for k, v in kwargs.items())
+                    console.print(f"  {label('ACTION', 'yellow')}[yellow]{tool}({args_str})[/]")
 
         # Print OBSERVATION
         elif event == "observation":
-            trimmed_observation = data[:250] + "\n[TRUNCATED]" if len(data) > 250 else data
-            console.print(f"  {label('OBSERVATION', 'green')}{trimmed_observation}\n")
+            # trimmed_observation = data[:1000] + "\n[TRUNCATED]" if len(data) > 1000 else data
+            console.print(f"  {label('OBSERVATION', 'green')}{data}\n")
             console.print(Rule(style="dim"), end="\n\n")
 
     def _animate_thinking(self) -> None:

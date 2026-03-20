@@ -1,5 +1,5 @@
 from illustrated_agents import LLM
-from illustrated_agents.utils import CodeAnnotator, DiffViewer
+from illustrated_agents.utils import CodeAnnotator, DiffViewer, ChapterOverview
 from illustrated_agents.chapters import ch2
 
 
@@ -46,8 +46,15 @@ class TinyAgent:
         """Execute a tool action."""
         # Placeholder - will be implemented in later chapters
         return f"Executed action: {action}"
-    
 
+
+what_we_built = ChapterOverview(
+    [
+        ("agent.py", "updated", "Integrated `Memory` into your `TinyAgent`."),
+        ("llm.py", None, ""),
+        ("memory.py", "new", "Track conversation history."),
+    ]
+)
 
 
 tinyagent_annotated = CodeAnnotator(

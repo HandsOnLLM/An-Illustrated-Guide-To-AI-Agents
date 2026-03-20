@@ -6,6 +6,9 @@ from pygments import highlight
 from pygments.lexers import DiffLexer
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import PythonLexer
+from rich.tree import Tree
+from rich.panel import Panel
+from rich.console import Console
 
 
 def _get_source(source):
@@ -122,3 +125,27 @@ pre{{line-height:1.5em!important}}
     def save(self, path):
         with open(path, "w", encoding="utf-8") as f:
             f.write(self._repr_html_())
+
+
+class ChapterOverview:
+    """Display chapter summary as a rich Panel + Tree in Jupyter."""
+
+    def __init__(self, modules):
+        self.modules = modules
+
+    def __repr__(self):
+        tree = Tree("[bold]TinyAgent[/]")
+        max_len = max(len(m[0]) for m in self.modules)
+
+        for name, status, desc in self.modules:
+            padded = name.ljust(max_len)
+            if status == "new":
+                tree.add(f"[bold green]{padded}[/] [dim]← [/][bold]New [dim]({desc})[/]")
+            elif status == "updated":
+                tree.add(f"[bold orange]{padded}[/] [dim]← [/][bold]Updated [dim]({desc})[/]")
+            else:
+                tree.add(f"[dim]{padded}[/]")
+
+        panel = Panel(tree, title="What We Built", border_style="dim")
+        Console(force_terminal=True).print(panel)
+        return ""

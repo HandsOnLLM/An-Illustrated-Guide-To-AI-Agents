@@ -1,6 +1,5 @@
 from illustrated_agents import LLM, Memory, Tools, ReAct, Reflector
-from illustrated_agents.utils import DiffViewer
-from illustrated_agents.utils import CodeAnnotator
+from illustrated_agents.utils import DiffViewer, CodeAnnotator, ChapterOverview
 from illustrated_agents.chapters import ch6
 
 
@@ -67,6 +66,19 @@ class TinyAgent:
         self.memory.add("user", obs_prompt)
 
         return None
+
+
+what_we_built = ChapterOverview(
+    [
+        ("agent.py", "updated", "During the `for-loop`, check if reflection needs to be activated."),
+        ("llm.py", None, ""),
+        ("memory.py", None, ""),
+        ("planning.py", None, ""),
+        ("reflection.py", "new", "Added `Reflection` to reflect its work every n steps."),
+        ("toolbox.py", None, ""),
+        ("tools.py", None, ""),
+    ]
+)
 
 
 tinyagents_diff = DiffViewer(ch6.TinyAgent, TinyAgent, "ch6.TinyAgent without Reflection", "ch6.TinyAgent Reflection")

@@ -1,8 +1,7 @@
 from illustrated_agents import LLM, Memory
 from illustrated_agents.tools import Tools, MCPTools
-from illustrated_agents.utils import DiffViewer
+from illustrated_agents.utils import DiffViewer, CodeAnnotator, ChapterOverview
 from illustrated_agents.chapters import ch4
-from illustrated_agents.utils import CodeAnnotator
 
 
 class TinyAgent:
@@ -49,6 +48,27 @@ class TinyAgent:
         self.memory.add("user", obs_prompt)
 
         return obs_prompt
+
+
+what_we_built = ChapterOverview(
+    [
+        ("agent.py", "updated", "Added `Tools`!"),
+        ("llm.py", None, ""),
+        ("memory.py", None, ""),
+        ("toolbox.py", "new", "This file tracks all tools that were created for easy reference."),
+        ("tools.py", "new", "Created a tool registry, parsing, and execution class."),
+    ]
+)
+
+what_we_built_mcp = ChapterOverview(
+    [
+        ("agent.py", None, ""),
+        ("llm.py", None, ""),
+        ("memory.py", None, ""),
+        ("toolbox.py", None, ""),
+        ("tools.py", "updated", "Added `MCPTools` to use Model Context Protocol (MCP)."),
+    ]
+)
 
 
 tinyagents_diff = DiffViewer(ch4.TinyAgent, TinyAgent, "ch4.TinyAgent", "ch5.TinyAgent")
