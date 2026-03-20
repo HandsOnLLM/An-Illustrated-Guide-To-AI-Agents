@@ -9,8 +9,11 @@ from illustrated_agents.chapters import ch9
 console = Console()
 
 
+from illustrated_agents.planning import ReAct
+
+
 class XMLReAct(ReAct):
-    """ReACT module."""
+    """ReAct module."""
 
     @property
     def prompt(self) -> str:
@@ -27,7 +30,9 @@ You use the following format for each step:
 THOUGHT: [Your reasoning about what to do next]
 ACTION:
 <tool>a_tool_name</tool>
-<param_name>value</param_name>
+<parameter_name>value</parameter_name>
+
+Where each parameter gets its own XML tag matching the parameter name.
 
 An observation will be provided after each action. You do not generate the observation yourself.
 
@@ -46,23 +51,36 @@ You can also use `final_answer` to directly reply to a user's question without u
 
 
 class XMLTools(Tools):
-    """Tool registry for the Agent."""
+    """Tool registry for the Agent with XML parsing and human-in-the-loop approval."""
+
+    def __init__(self, requires_approval: list[str] = []):
+        self.tools = {}
+        self.requires_approval = requires_approval
+
+    def run_tool(self, tool_call: dict) -> str:
+        """Run a tool, with human approval for dangerous tools."""
+        name, kwargs = tool_call["tool"], tool_call.get("kwargs", {})
+
+        # Human-in-the-loop: ask before running dangerous tools
+        if name in self.requires_approval:
+            response = input(f"Allow {name}({kwargs})? [y/N] ").strip().lower()
+            if response not in ("y", "yes"):
+                return f"Tool '{name}' was denied by the user."
+
+        return super().run_tool(tool_call)
 
     @property
-    def prompt(self):
+    def prompt(self) -> str:
         return f"""
 # Tools
 
 If needed, you can only use the following tools to assist you in completing tasks:
 
 {self.descriptions}
-
-To use a tool, respond with XML tags:
-<tool>tool_name</tool>
-<param_name>value</param_name>
 """
 
     def has_tool_call(self, text: str) -> bool:
+        """Check whether there is a tool call in `text`."""
         return "<tool>" in text
 
     def parse_tool_call(self, text: str) -> dict:
@@ -83,21 +101,17 @@ To use a tool, respond with XML tags:
 class Display:
     """Formats agent events for the terminal."""
 
-    def __init__(self):
-        self._status = None
-
     def __call__(self, event, data=None):
 
         # Animate thinking
         if event == "thinking":
-            self._status = console.status("Thinking...", spinner="dots")
-            self._status.start()
+            console.print("  [dim]Thinking...[/]")
 
         # Print THOUGHT
         elif event == "response":
-            self.stop()
-            thought = re.search(r"THOUGHT:\s*(.+?)(?=ACTION:|$)", data, re.IGNORECASE | re.DOTALL).group(1).strip()
-            console.print(f"  [bold dark_orange]{'THOUGHT':<13}[/][dim italic]{thought}[/]\n")
+            match = re.search(r"THOUGHT:\s*(.+?)(?=ACTION:|$)", data, re.IGNORECASE | re.DOTALL)
+            thought = match.group(1).strip() if match else data.strip()
+            console.print(f"  [bold dark_orange]{'THOUGHT':<13}[/][dim italic]{thought}[/]")
 
         # Print ACTION
         elif event == "tool_call" and data:
@@ -108,13 +122,8 @@ class Display:
 
         # Print OBSERVATION
         elif event == "observation":
-            console.print(f"  [bold green]{'OBSERVATION':<13}[/]{data}\n")
-            console.print(Rule(style="dim"), end="\n\n")
-
-    def stop(self):
-        if self._status:
-            self._status.stop()
-            self._status = None
+            console.print(f"  [bold green]{'OBSERVATION':<13}[/]{data}")
+            console.print(Rule(style="dim"), end="\n")
 
 
 class TinyAgent:
@@ -240,10 +249,14 @@ tools_diff = DiffViewer(Tools.prompt, XMLTools.prompt, "Tools", "XMLTools")
 tools_annotated = CodeAnnotator(
     XMLTools,
     annotations={
-        (13, 15): "The prompt now instructs the agent to use XML tags to call tools instead of JSON.",
-        19: "We now search for <tool> tags instead of JSON tool calls.",
-        24: "Since there will be only a single tool call per response, we can simplify the parsing logic to just look for the first <tool> tag.",
-        (27, 31): "There might be multiple keyword arguments (kwargs) in the tool call that need to be extracted.",
+        6: "Accept a list of tool names that require human approval before execution.",
+        (
+            13,
+            16,
+        ): "Human-in-the-loop: prompt the user with <code>input()</code> before running dangerous tools. If denied, return a message instead.",
+        32: "We now search for <code>&lt;tool&gt;</code> tags instead of JSON tool calls.",
+        37: "Since there will be only a single tool call per response, we can simplify the parsing logic to just look for the first <code>&lt;tool&gt;</code> tag.",
+        (40, 44): "There might be multiple keyword arguments (kwargs) in the tool call that need to be extracted.",
     },
 )
 
@@ -251,10 +264,10 @@ tools_annotated = CodeAnnotator(
 display_annotated = CodeAnnotator(
     Display.__call__,
     annotations={
-        (5, 6): "When the LLM starts generating, show a spinner.",
-        (10, 12): "When a response arrives, stop the spinner and display the extracted <b>THOUGHT</b>.",
-        18: "Print intermediate answers as an <b>ACTION</b> and continue the loop.",
-        (20, 21): "Format tool calls as <b>ACTION</b>.",
-        (25, 26): "Display the <b>OBSERVATION</b> returned by the tool.",
+        5: "When the LLM starts generating, show `Thinking...` so the user knows the agent is processing.",
+        (9, 11): "When a response arrives, stop the spinner and display the extracted <b>THOUGHT</b>.",
+        14: "Print intermediate answers as an <b>ACTION</b> and continue the loop.",
+        (17, 18): "Format tool calls as <b>ACTION</b>.",
+        (22, 24): "Display the <b>OBSERVATION</b> returned by the tool.",
     },
 )

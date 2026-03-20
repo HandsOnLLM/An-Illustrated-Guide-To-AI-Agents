@@ -11,7 +11,7 @@ from rich.table import Table
 import illustrated_agents
 from illustrated_agents import LLM, Memory, Reflector, Skills
 from illustrated_agents.display import label, Display, LOGO, FLAMINGO_LOGO
-from illustrated_agents.chapters.ch11_tools import create_code_tools
+from illustrated_agents.toolbox import create_code_tools
 from illustrated_agents.chapters.ch11 import XMLReAct, TinyAgent
 
 load_dotenv()
