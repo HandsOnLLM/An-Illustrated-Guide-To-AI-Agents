@@ -82,4 +82,4 @@ uv run chapter03/example.py
 python chapter03/example.py
 ```
 
-**NOTE**: In the `.py` examples, we assume you have `Ollama` running and downloaded Gemma 3 with `ollama pull gemma3:12b`!
+**NOTE**: In the `.py` examples, we assume you have `Ollama` running and downloaded Gemma 4 with `ollama pull gemma4:e4b`!

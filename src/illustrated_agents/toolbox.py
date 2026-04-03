@@ -94,22 +94,20 @@ def create_code_tools(workspace: str = ".") -> XMLTools:
         results = [str(p.relative_to(root)) for p in matches if str(p.resolve()).startswith(str(root))]
         return "\n".join(results[:30]) or "No files found."
 
-    def search_files(query: str, directory: str = ".") -> str:
-        """Search for text across files, returning matching lines."""
-        target = _safe_path(directory)
+    def search_file(query: str, path: str) -> str:
+        """Search for text in a file, returning matching lines."""
+        target = _safe_path(path)
+        if not target.is_file():
+            return f"Error: '{path}' is not a file."
         matches = []
-        for file in sorted(target.rglob("*")):
-            if not file.is_file():
-                continue
-            try:
-                for i, line in enumerate(file.read_text(encoding="utf-8").splitlines(), 1):
-                    if query in line:
-                        rel = file.relative_to(root)
-                        matches.append(f"{rel}:{i}: {line.strip()}")
-                        if len(matches) >= 20:
-                            return "\n".join(matches) + "\n(truncated)"
-            except (UnicodeDecodeError, PermissionError):
-                continue
+        try:
+            for i, line in enumerate(target.read_text(encoding="utf-8").splitlines(), 1):
+                if query in line:
+                    matches.append(f"{i}: {line.strip()}")
+                    if len(matches) >= 20:
+                        return "\n".join(matches) + "\n(truncated)"
+        except (UnicodeDecodeError, PermissionError) as e:
+            return f"Error reading '{path}': {e}"
         return "\n".join(matches) or "No matches found."
 
     def execute_python(code: str) -> str:
@@ -127,7 +125,7 @@ def create_code_tools(workspace: str = ".") -> XMLTools:
             return result.stdout.strip() or "(no output)"
         except subprocess.TimeoutExpired:
             return "Error: Code execution timed out (30s limit)."
-        
+
     def show_python(code: str):
         """Print syntax-highlighted Python code."""
         print(highlight(code, PythonLexer(), TerminalFormatter()))
@@ -138,7 +136,7 @@ def create_code_tools(workspace: str = ".") -> XMLTools:
     tools.add_tool("read_lines", read_lines, "Read line range: read_lines(path: str, start: int, end: int)")
     tools.add_tool("list_files", list_files, "List files: list_files(directory: str)")
     tools.add_tool("find_files", find_files, "Find files by pattern: find_files(pattern: str)")
-    tools.add_tool("search_files", search_files, "Search text in files: search_files(query: str, directory: str)")
+    tools.add_tool("search_file", search_file, "Search for text in a file: search_file(query: str, path: str)")
     tools.add_tool("write_file", write_file, "Write a file: write_file(path: str, content: str)")
     tools.add_tool("execute_python", execute_python, "Run Python code: execute_python(code: str)")
     tools.add_tool("show_python", show_python, "Display Python code with syntax highlighting: show_python(code: str)")

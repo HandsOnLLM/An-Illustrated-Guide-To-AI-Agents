@@ -2,7 +2,7 @@ import re
 
 
 class ReAct:
-    """ReACT module."""
+    """ReAct module."""
 
     def __init__(self, max_steps: int = 10):
         """Initialize ReAct module.
@@ -15,12 +15,12 @@ class ReAct:
     @property
     def prompt(self) -> str:
         return """
-# ReACT (Reason and Act)
+# ReAct (Reason and Act)
 
 You are a ReAct agent that performs exactly ONE step per turn.
 Make sure to break down a given task into smaller steps and decide whether to use a tool or provide a final answer.
 
-## ReACT Format
+## ReAct Format
 
 You use the following format for each step:
 
@@ -33,7 +33,7 @@ ACTION:
 
 An observation will be provided after each action. You do not generate the observation yourself.
 
-## ReACT Completion
+## ReAct Completion
 
 To provide the final answer to the task, use an action blob with "tool": "final_answer" tool. 
 It is the only way to complete the task, else you will be stuck on a loop. So your final output should look like this:
@@ -72,21 +72,17 @@ class XMLReAct(ReAct):
     @property
     def prompt(self) -> str:
         return """
-# ReACT (Reason and Act)
+# ReAct (Reason and Act)
 
 You are a ReAct agent that performs exactly ONE step per turn.
 Make sure to break down a given task into smaller steps and decide whether to use a tool or provide a final answer.
 
-## ReACT Format
+## ReAct Format
 
 You use the following format for each step:
 
 THOUGHT: [Your reasoning about what to do next]
-ACTION:
-<tool>A_TOOL_NAME</tool>
-<PARAMETER_NAME>VALUE</PARAMETER_NAME>
-
-Where each parameter gets its own XML tag matching the parameter name.
+ACTION: (see example below)
 
 An observation will be provided after each action. You do not generate the observation yourself.
 
@@ -98,10 +94,11 @@ ACTION:
 <query>current weather in New York</query>
 <num_results>1</num_results>
 
-## ReACT Completion
+Each parameter gets its own XML tag matching the parameter name from the tool description.
 
-To provide the final answer to the task, use the final_answer tool.
-It is the only way to complete the task, else you will be stuck on a loop. So your final output should look like this:
+## ReAct Completion
+
+To provide the final answer to the task, use the `final_answer` tool like so:
 
 ACTION:
 <tool>final_answer</tool>

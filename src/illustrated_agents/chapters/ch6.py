@@ -18,7 +18,7 @@ class TinyAgent:
         system_prompt = "You are a helpful AI agent.\n\n"
         system_prompt += self.planner.prompt + "\n\n"
         system_prompt += self.tools.prompt
-        self.memory.add("user", system_prompt)
+        self.memory.add("system", system_prompt)
 
     def run(self, task: str) -> str:
         """Run the agent on a task."""
@@ -81,7 +81,7 @@ tinyagents_diff = DiffViewer(ch5.TinyAgent, TinyAgent, "ch5.TinyAgent", "ch6.Tin
 react_prompt_annotated = CodeAnnotator(
     ReAct.prompt,
     annotations={
-        (6, 7): "Main explanation of the ReACT framework.",
+        (6, 7): "Main explanation of the ReAct framework.",
         13: "<b>THOUGHT</b> - reasoning about next step.",
         (14, 19): "<b>ACTION</b> - tool call format.",
         20: "<b>OBSERVATION</b> - provided after action.",
@@ -112,7 +112,7 @@ tinyagent_run_annotated = CodeAnnotator(
     TinyAgent.run,
     annotations={
         3: "The initial task is immediately added to memory as a user message so that the Agent can reference it during the loop.",
-        (6, 9): "The `Autonomy` (ReACT) loop where the agent performs steps until completion or max steps reached.",
+        (6, 9): "The `Autonomy` (ReAct) loop where the agent performs steps until completion or max steps reached.",
     },
 )
 

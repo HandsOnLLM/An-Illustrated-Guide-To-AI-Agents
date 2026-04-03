@@ -18,7 +18,7 @@ class TinyAgent:
         # Build system prompt with all components
         system_prompt = "You are a helpful assistant.\n\n"
         system_prompt += self.tools.prompt
-        self.memory.add("user", system_prompt)
+        self.memory.add("system", system_prompt)
 
     def run(self, task: str) -> str:
         """Run the agent on a task."""

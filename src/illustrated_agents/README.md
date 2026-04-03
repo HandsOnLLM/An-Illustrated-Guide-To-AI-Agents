@@ -20,7 +20,7 @@ from illustrated_agents.skills import Skills  # skills.py
 from illustrated_agents.agent import TinyAgent  # tinyagent.py
 
 # Choose an LLM
-llm = LLM(model="ollama/gemma3:12b")
+llm = LLM(model="ollama/gemma4:e4b")
 
 # Add Memory (simple conversation memory)
 memory = Memory()

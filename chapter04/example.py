@@ -5,7 +5,7 @@ from illustrated_agents.chapters.ch4 import TinyAgent
 
 
 if __name__ == "__main__":
-    llm = LLM(model="ollama/gemma3:12b")
+    llm = LLM(model="ollama/gemma4:e4b")
 
     # Add memory to the Agent
     memory = Memory()

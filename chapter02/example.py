@@ -3,7 +3,7 @@ from illustrated_agents.chapters.ch2 import TinyAgent
 
 
 if __name__ == "__main__":
-    llm = LLM(model="ollama/gemma3:12b")
+    llm = LLM(model="ollama/gemma4:e4b")
     agent = TinyAgent(llm=llm)
     query = "What is 2 + 2?"
     response = agent.run(query)

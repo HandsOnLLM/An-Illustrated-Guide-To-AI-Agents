@@ -10,7 +10,7 @@ from illustrated_agents.chapters.ch6_skills import TinyAgent
 
 if __name__ == "__main__":
     # Create LLM
-    llm = LLM(model="ollama/gemma3:12b")
+    llm = LLM(model="ollama/gemma4:e4b")
 
     # Create MCP-based tools (includes read_markdown)
     tools = MCPTools()

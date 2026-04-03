@@ -19,7 +19,7 @@ class TinyAgent:
         system_prompt += self.planner.prompt + "\n\n"
         system_prompt += self.tools.prompt
         system_prompt += self.skills.prompt
-        self.memory.add("user", system_prompt)
+        self.memory.add("system", system_prompt)
 
     def run(self, task: str, image_url: str = None) -> str:
         """Run the agent on a task."""

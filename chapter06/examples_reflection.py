@@ -18,7 +18,7 @@ if __name__ == "__main__":
     tools.add_tool("get_weather", get_weather, "Gets weather: get_weather(location: str)")
 
     # LLM
-    llm = LLM(model="ollama/gemma3:12b")
+    llm = LLM(model="ollama/gemma4:e4b")
 
     # Memory
     memory = Memory()

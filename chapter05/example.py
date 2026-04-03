@@ -17,7 +17,7 @@ if __name__ == "__main__":
     tools.add_tool("get_weather", get_weather, "Gets weather: get_weather(location: str)")
 
     # Create agent
-    llm = LLM(model="ollama/gemma3:12b")
+    llm = LLM(model="ollama/gemma4:e4b")
     memory = Memory()
     agent = TinyAgent(llm=llm, tools=tools, memory=memory)
 

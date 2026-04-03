@@ -22,7 +22,7 @@ def get_weather(location: str) -> str:
 
 if __name__ == "__main__":
     # Both Agents use the same LLM but not share memory or tools
-    llm = LLM(model="ollama/gemma3:12b")
+    llm = LLM(model="ollama/gemma4:e4b")
 
     # Math Agent
     math_tools = Tools()

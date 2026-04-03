@@ -16,28 +16,33 @@ class XMLReAct(ReAct):
     @property
     def prompt(self) -> str:
         return """
-# ReACT (Reason and Act)
+# ReAct (Reason and Act)
 
 You are a ReAct agent that performs exactly ONE step per turn.
 Make sure to break down a given task into smaller steps and decide whether to use a tool or provide a final answer.
 
-## ReACT Format
+## ReAct Format
 
 You use the following format for each step:
 
 THOUGHT: [Your reasoning about what to do next]
-ACTION:
-<tool>a_tool_name</tool>
-<parameter_name>value</parameter_name>
-
-Where each parameter gets its own XML tag matching the parameter name.
+ACTION: (see example below)
 
 An observation will be provided after each action. You do not generate the observation yourself.
 
-## ReACT Completion
+### Example
 
-To provide the final answer to the task, use the final_answer tool.
-It is the only way to complete the task, else you will be stuck on a loop. So your final output should look like this:
+THOUGHT: I need to search the web for the current weather in New York.
+ACTION:
+<tool>search_web</tool>
+<query>current weather in New York</query>
+<num_results>1</num_results>
+
+Each parameter gets its own XML tag matching the parameter name from the tool description.
+
+## ReAct Completion
+
+To provide the final answer to the task, use the `final_answer` tool like so:
 
 ACTION:
 <tool>final_answer</tool>
@@ -147,7 +152,7 @@ class TinyAgent:
         system_prompt += self.planner.prompt + "\n\n"
         system_prompt += self.tools.prompt
         system_prompt += self.skills.prompt
-        self.memory.add("user", system_prompt)
+        self.memory.add("system", system_prompt)
 
     def run(self, task: str, image_url: str = None) -> str:
         """Run the agent on a task."""

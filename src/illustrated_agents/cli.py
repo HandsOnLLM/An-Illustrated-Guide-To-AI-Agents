@@ -76,7 +76,7 @@ def main():
     parser.add_argument("--pink", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
 
-    model = os.getenv("MODEL", "ollama/gemma3:12b")
+    model = os.getenv("MODEL", "ollama/gemma4:e4b")
     display = Display(pink=args.pink)
 
     # Tools / Skills
