@@ -58,28 +58,31 @@ class TinyAgent:
         if self.tools.has_tool_call(response):
             return self._execute_action(response)
 
+        self.memory.add("user", "OBSERVATION: No valid action found. Use the correct THOUGHT/ACTION format.")
         return None
 
     def _execute_action(self, action: str) -> str | None:
         """Execute a tool action."""
-        tool_call = self.tools.parse_tool_call(action)
-        self.display("tool_call", tool_call)
+        try:
+            tool_call = self.tools.parse_tool_call(action)
+            self.display("tool_call", tool_call)
 
-        # Final answer ends the loop
-        if tool_call["tool"] == "final_answer":
-            return tool_call["kwargs"]["answer"]
+            # Final answer ends the loop
+            if tool_call["tool"] == "final_answer":
+                return tool_call["kwargs"]["answer"]
 
-        # Activate skill and extract the observation
-        if tool_call["tool"] == "use_skill":
-            observation = self.skills.activate(tool_call)
+            # Activate skill and extract the observation
+            if tool_call["tool"] == "use_skill":
+                observation = self.skills.activate(tool_call)
 
-        # Execute tool and extract the observation
-        else:
-            observation = self.tools.run_tool(tool_call)
+            # Execute tool and extract the observation
+            else:
+                observation = self.tools.run_tool(tool_call)
+        except Exception as e:
+            observation = f"Error: {e}"
 
         # Format the observation and add it to memory
         self.display("observation", observation)
-        obs_prompt = f"OBSERVATION: {action} -> {observation}"
-        self.memory.add("user", obs_prompt)
+        self.memory.add("user", f"OBSERVATION: {observation}")
 
         return None

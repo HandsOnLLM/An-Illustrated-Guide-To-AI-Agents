@@ -26,34 +26,27 @@ Make sure to break down a given task into smaller steps and decide whether to us
 You use the following format for each step:
 
 THOUGHT: [Your reasoning about what to do next]
-ACTION: (see example below for XML format)
+ACTION: (see example below)
 
 An observation will be provided after each action. You do not generate the observation yourself.
 
 ### Example
 
-THOUGHT: I need to find the installation instructions in the README to answer the user's question.
+THOUGHT: I need to search the web for the current weather in New York.
 ACTION:
-<tool_call>
-    <tool>search_file</tool>
-    <param name="query">pip install</param>
-    <param name="path">README.md</param>
-</tool_call>
+<tool>search_web</tool>
+<query>current weather in New York</query>
+<num_results>1</num_results>
 
-Each parameter gets its own `<param>` tag with a `name` attribute matching the parameter name from the tool description.
+Each parameter gets its own XML tag matching the parameter name from the tool description.
 
 ## ReAct Completion
 
 To provide the final answer to the task, use the `final_answer` tool like so:
 
 ACTION:
-<tool_call>
-    <tool>final_answer</tool>
-    <param name="answer">
-        Insert your final answer here. 
-        The answer can span multiple lines. 
-    </param>
-</tool_call>
+<tool>final_answer</tool>
+<answer>insert your final answer here</answer>
 
 Use the `final_answer` tool when you are completely done with all subtasks and have the final answer ready.
 You can also use `final_answer` to directly reply to a user's question without using any tools if you think you can answer it directly.
@@ -91,14 +84,16 @@ If needed, you can only use the following tools to assist you in completing task
 
     def has_tool_call(self, text: str) -> bool:
         """Check whether there is a tool call in `text`."""
-        return "<tool_call>" in text
+        return "<tool>" in text
 
     def parse_tool_call(self, text: str) -> dict:
         """Parse an XML tool call from text."""
         tool = re.search(r"<tool>(.*?)</tool>", text, re.DOTALL).group(1).strip()
         kwargs = {}
-        for match in re.finditer(r'<param name="(\w+)">(.*?)(?=</param>|<param |</tool_call>)', text, re.DOTALL):
-            kwargs[match.group(1)] = match.group(2).strip()
+        for match in re.finditer(r"<(\w+)>(.*?)</\1>", text, re.DOTALL):
+            name, value = match.group(1), match.group(2).strip()
+            if name != "tool":
+                kwargs[name] = value
         return {"tool": tool, "kwargs": kwargs}
 
 
@@ -186,29 +181,32 @@ class TinyAgent:
         if self.tools.has_tool_call(response):
             return self._execute_action(response)
 
+        self.memory.add("user", "OBSERVATION: No valid action found. Use the correct THOUGHT/ACTION format.")
         return None
 
     def _execute_action(self, action: str) -> str | None:
         """Execute a tool action."""
-        tool_call = self.tools.parse_tool_call(action)
-        self.display("tool_call", tool_call)
+        try:
+            tool_call = self.tools.parse_tool_call(action)
+            self.display("tool_call", tool_call)
 
-        # Final answer ends the loop
-        if tool_call["tool"] == "final_answer":
-            return tool_call["kwargs"]["answer"]
+            # Final answer ends the loop
+            if tool_call["tool"] == "final_answer":
+                return tool_call["kwargs"]["answer"]
 
-        # Activate skill and extract the observation
-        if tool_call["tool"] == "use_skill":
-            observation = self.skills.activate(tool_call)
+            # Activate skill and extract the observation
+            if tool_call["tool"] == "use_skill":
+                observation = self.skills.activate(tool_call)
 
-        # Execute tool and extract the observation
-        else:
-            observation = self.tools.run_tool(tool_call)
+            # Execute tool and extract the observation
+            else:
+                observation = self.tools.run_tool(tool_call)
+        except Exception as e:
+            observation = f"Error: {e}"
 
         # Format the observation and add it to memory
         self.display("observation", observation)
-        obs_prompt = f"OBSERVATION: {action} -> {observation}"
-        self.memory.add("user", obs_prompt)
+        self.memory.add("user", f"OBSERVATION: {observation}")
 
         return None
 
@@ -279,8 +277,8 @@ tools_annotated = CodeAnnotator(
             16,
         ): "Human-in-the-loop: prompt the user with <code>input()</code> before running dangerous tools. If denied, return a message instead.",
         32: "We now search for <code>&lt;tool&gt;</code> tags instead of JSON tool calls.",
-        37: "Since there will be only a single tool call per response, we can simplify the parsing logic to just look for the first <code>&lt;tool&gt;</code> tag.",
-        (40, 44): "There might be multiple keyword arguments (kwargs) in the tool call that need to be extracted.",
+        36: "Since there will be only a single tool call per response, we can simplify the parsing logic to just look for the first <code>&lt;tool&gt;</code> tag.",
+        (38, 42): "There might be multiple keyword arguments (kwargs) in the tool call that need to be extracted.",
     },
 )
 

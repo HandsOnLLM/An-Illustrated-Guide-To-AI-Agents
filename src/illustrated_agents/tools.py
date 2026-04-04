@@ -3,6 +3,7 @@ import re
 import sys
 import asyncio
 
+
 from typing import Callable
 from pathlib import Path
 from mcp import ClientSession, StdioServerParameters
@@ -151,12 +152,18 @@ If needed, you can only use the following tools to assist you in completing task
 
     def has_tool_call(self, text: str) -> bool:
         """Check whether there is a tool call in `text`."""
-        return "<tool_call>" in text
+        return "<tool>" in text
 
     def parse_tool_call(self, text: str) -> dict:
         """Parse an XML tool call from text."""
+        # Extract the tool name
         tool = re.search(r"<tool>(.*?)</tool>", text, re.DOTALL).group(1).strip()
+
+        # Extract parameters as kwargs
         kwargs = {}
-        for match in re.finditer(r'<param name="(\w+)">(.*?)(?=</param>|<param |</tool_call>)', text, re.DOTALL):
-            kwargs[match.group(1)] = match.group(2).strip()
+        for match in re.finditer(r"<(\w+)>(.*?)(?:</\1>|$)", text, re.DOTALL):
+            name, value = match.group(1), match.group(2).strip()
+            if name != "tool":
+                kwargs[name] = value
+
         return {"tool": tool, "kwargs": kwargs}
