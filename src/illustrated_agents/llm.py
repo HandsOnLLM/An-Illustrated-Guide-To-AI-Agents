@@ -19,5 +19,5 @@ class LLM:
 
         # Native Ollama
         else:
-            response = ollama.chat(model=self.model, messages=messages, think=self.think, **self.kwargs)
+            response = ollama.chat(model=self.model, messages=messages, think=self.think)
             return response.message.content

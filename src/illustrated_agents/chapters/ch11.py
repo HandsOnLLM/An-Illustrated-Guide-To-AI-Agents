@@ -26,27 +26,34 @@ Make sure to break down a given task into smaller steps and decide whether to us
 You use the following format for each step:
 
 THOUGHT: [Your reasoning about what to do next]
-ACTION: (see example below)
+ACTION: (see example below for XML format)
 
 An observation will be provided after each action. You do not generate the observation yourself.
 
 ### Example
 
-THOUGHT: I need to search the web for the current weather in New York.
+THOUGHT: I need to find the installation instructions in the README to answer the user's question.
 ACTION:
-<tool>search_web</tool>
-<query>current weather in New York</query>
-<num_results>1</num_results>
+<tool_call>
+    <tool>search_file</tool>
+    <param name="query">pip install</param>
+    <param name="path">README.md</param>
+</tool_call>
 
-Each parameter gets its own XML tag matching the parameter name from the tool description.
+Each parameter gets its own `<param>` tag with a `name` attribute matching the parameter name from the tool description.
 
 ## ReAct Completion
 
 To provide the final answer to the task, use the `final_answer` tool like so:
 
 ACTION:
-<tool>final_answer</tool>
-<answer>insert your final answer here</answer>
+<tool_call>
+    <tool>final_answer</tool>
+    <param name="answer">
+        Insert your final answer here. 
+        The answer can span multiple lines. 
+    </param>
+</tool_call>
 
 Use the `final_answer` tool when you are completely done with all subtasks and have the final answer ready.
 You can also use `final_answer` to directly reply to a user's question without using any tools if you think you can answer it directly.
@@ -66,8 +73,7 @@ class XMLTools(Tools):
 
         # Human-in-the-loop: ask before running dangerous tools
         if name in self.requires_approval:
-            kwargs = "" if name != "execute_python" else kwargs
-            response = input(f"Allow {name}({kwargs})? [y/N] ").strip().lower()
+            response = input(f"Allow {name}? [y/N] ").strip().lower()
             if response not in ("y", "yes"):
                 return f"Tool '{name}' was denied by the user."
 
@@ -85,20 +91,14 @@ If needed, you can only use the following tools to assist you in completing task
 
     def has_tool_call(self, text: str) -> bool:
         """Check whether there is a tool call in `text`."""
-        return "<tool>" in text
+        return "<tool_call>" in text
 
     def parse_tool_call(self, text: str) -> dict:
         """Parse an XML tool call from text."""
-        # Extract the tool name
         tool = re.search(r"<tool>(.*?)</tool>", text, re.DOTALL).group(1).strip()
-
-        # Extract parameters as kwargs
         kwargs = {}
-        for match in re.finditer(r"<(\w+)>(.*?)</\1>", text, re.DOTALL):
-            name, value = match.group(1), match.group(2).strip()
-            if name != "tool":
-                kwargs[name] = value
-
+        for match in re.finditer(r'<param name="(\w+)">(.*?)(?=</param>|<param |</tool_call>)', text, re.DOTALL):
+            kwargs[match.group(1)] = match.group(2).strip()
         return {"tool": tool, "kwargs": kwargs}
 
 

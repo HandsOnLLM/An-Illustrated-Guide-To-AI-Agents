@@ -76,7 +76,13 @@ def main():
     parser.add_argument("--pink", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
 
+    # Model and API configuration from environment variables
     model = os.getenv("MODEL", "ollama/gemma4:e4b")
+    api_base = os.getenv("API_BASE", "http://localhost:8080/v1")
+    api_key = os.getenv("API_KEY", "sk-no-key-required")
+    llm = LLM(model=model, api_base=api_base, api_key=api_key)
+
+    # CLI
     display = Display(pink=args.pink)
 
     # Tools / Skills
@@ -87,7 +93,7 @@ def main():
 
     # Agent
     agent = TinyAgent(
-        llm=LLM(model=model),
+        llm=llm,
         memory=Memory(),
         tools=tools,
         planner=XMLReAct(max_steps=10),
