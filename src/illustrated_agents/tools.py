@@ -148,6 +148,7 @@ class XMLTools(Tools):
 If needed, you can only use the following tools to assist you in completing tasks:
 
 {self.descriptions}
+`final_answer`: Return the final answer to the user's query. Use this tool when you have the complete answer ready: final_answer(content: str)
 """
 
     def has_tool_call(self, text: str) -> bool:

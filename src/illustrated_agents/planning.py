@@ -96,9 +96,10 @@ ACTION:
 <query>pip install</query>
 <path>README.md</path>
 
-## Answering and Completion
 
-To provide the final answer to the task or to answer a question directly, use the ACTION like so:
+## Answer
+
+To provide a final or direct answer to a given query, use the ACTION like so:
 
 THOUGHT: The answer to the user's question is found in the README, so I will provide it directly without using any tools.
 ACTION:

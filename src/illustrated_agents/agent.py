@@ -20,8 +20,8 @@ class TinyAgent:
         self.display = display
 
         # Build system prompt with all components
-        system_prompt = "You are a helpful AI agent.\n\n"
-        system_prompt += self.planner.prompt + "\n\n"
+        system_prompt = "You are a helpful AI agent.\n"
+        system_prompt += self.planner.prompt
         system_prompt += self.tools.prompt
         system_prompt += self.skills.prompt
         self.memory.add("system", system_prompt)
@@ -58,7 +58,7 @@ class TinyAgent:
         if self.tools.has_tool_call(response):
             return self._execute_action(response)
 
-        self.memory.add("user", "OBSERVATION: No valid action found. Use the correct THOUGHT/ACTION format.")
+        self.memory.add("user", "OBSERVATION: No valid action found. Use the correct ACTION format.")
         return None
 
     def _execute_action(self, action: str) -> str | None:
