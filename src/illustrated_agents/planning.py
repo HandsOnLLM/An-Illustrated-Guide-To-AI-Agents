@@ -48,8 +48,9 @@ Use the `final_answer` tool when you are completely done with all subtasks and h
 You can also use `final_answer` to directly reply to a user's question without using any tools if you think you can answer it directly.
 """
 
-    def parse(self, text: str) -> dict:
+    def parse(self, response) -> str:
         """Parse a ReAct formatted response into THOUGHT and ACTION."""
+        text = response.content
 
         # The patterns for each section
         patterns = {
@@ -64,6 +65,17 @@ You can also use `final_answer` to directly reply to a user's question without u
             result[key] = match.group(1).strip() if match else ""
 
         return result["ACTION"]
+
+
+class NativeReAct(ReAct):
+    """ReAct using native LLM reasoning instead of text-based parsing."""
+
+    @property
+    def prompt(self) -> str:
+        return ""
+
+    def parse(self, response):
+        return response
 
 
 class XMLReAct(ReAct):

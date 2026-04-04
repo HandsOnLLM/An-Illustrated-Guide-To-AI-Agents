@@ -11,6 +11,7 @@ from pygments import highlight
 from pygments.lexers import PythonLexer
 from pygments.formatters import TerminalFormatter
 from illustrated_agents import XMLTools
+from illustrated_agents import NativeTools
 
 
 # --- Simple Tools ---
@@ -44,8 +45,8 @@ def get_weather(location: str) -> str:
 # --- Code Tools (workspace-scoped) ---
 
 
-def create_code_tools(workspace: str = ".") -> XMLTools:
-    """Create coding tools scoped to a workspace directory."""
+def _build_code_tools(workspace: str = ".") -> dict:
+    """Build code tool functions scoped to a workspace. Returns {name: (func, description)}."""
     root = Path(workspace).resolve()
 
     def _safe_path(path: str) -> Path:
@@ -131,13 +132,29 @@ def create_code_tools(workspace: str = ".") -> XMLTools:
         print(highlight(code, PythonLexer(), TerminalFormatter()))
         return "Shown code with syntax highlighting."
 
+    return {
+        "read_file": (read_file, "Read a file: read_file(path: str)"),
+        "read_lines": (read_lines, "Read line range: read_lines(path: str, start: int, end: int)"),
+        "list_files": (list_files, "List files: list_files(directory: str)"),
+        "find_files": (find_files, "Find files by pattern: find_files(pattern: str)"),
+        "search_file": (search_file, "Search for text in a file: search_file(query: str, path: str)"),
+        "write_file": (write_file, "Write a file: write_file(path: str, content: str)"),
+        "execute_python": (execute_python, "Run Python code: execute_python(code: str)"),
+        "show_python": (show_python, "Display Python code with syntax highlighting: show_python(code: str)"),
+    }
+
+
+def create_code_tools(workspace: str = ".") -> XMLTools:
+    """Create coding tools scoped to a workspace directory."""
     tools = XMLTools(requires_approval=["execute_python", "write_file"])
-    tools.add_tool("read_file", read_file, "Read a file: read_file(path: str)")
-    tools.add_tool("read_lines", read_lines, "Read line range: read_lines(path: str, start: int, end: int)")
-    tools.add_tool("list_files", list_files, "List files: list_files(directory: str)")
-    tools.add_tool("find_files", find_files, "Find files by pattern: find_files(pattern: str)")
-    tools.add_tool("search_file", search_file, "Search for text in a file: search_file(query: str, path: str)")
-    tools.add_tool("write_file", write_file, "Write a file: write_file(path: str, content: str)")
-    tools.add_tool("execute_python", execute_python, "Run Python code: execute_python(code: str)")
-    tools.add_tool("show_python", show_python, "Display Python code with syntax highlighting: show_python(code: str)")
+    for name, (func, desc) in _build_code_tools(workspace).items():
+        tools.add_tool(name, func, desc)
+    return tools
+
+
+def create_native_code_tools(workspace: str = ".") -> NativeTools:
+    """Create coding tools with native function calling (schemas auto-generated)."""
+    tools = NativeTools()
+    for name, (func, desc) in _build_code_tools(workspace).items():
+        tools.add_tool(name, func, desc)
     return tools

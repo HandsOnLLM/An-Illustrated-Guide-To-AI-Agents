@@ -44,7 +44,7 @@ class TinyAgent:
         """Perform a single step."""
         # Generate response and add to memory
         response = self.llm.generate(self.memory.get_messages())
-        self.memory.add("assistant", response)
+        self.memory.add("assistant", response.content)
 
         # Parse planner's response to extract action if needed
         response = self.planner.parse(response)

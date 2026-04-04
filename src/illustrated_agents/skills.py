@@ -39,6 +39,12 @@ class Skills:
             "instructions": body,
         }
 
+    def use(self, name: str) -> str:
+        """Activate a skill by name (can be registered as a tool directly)."""
+        if name in self.skills:
+            return f"Skill '{name}' activated. Follow these instructions:\n\n{self.skills[name]['instructions']}"
+        return f"Skill '{name}' not found. Available: {', '.join(self.skills.keys())}"
+
     def activate(self, tool_call: dict) -> str:
         """Activate a skill and return formatted observation.
 

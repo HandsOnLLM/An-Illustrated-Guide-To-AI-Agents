@@ -30,7 +30,7 @@ class TinyAgent:
         """Perform a single step."""
         # Generate response and add to memory
         response = self.llm.generate(self.memory.get_messages())
-        self.memory.add("assistant", response)
+        self.memory.add("assistant", response.content)
 
         # Tool parsing and execution
         if self.tools.has_tool_call(response):

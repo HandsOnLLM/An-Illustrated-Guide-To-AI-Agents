@@ -56,6 +56,10 @@ class Tools:
         return tool_call
 
     @property
+    def schemas(self):
+        return None
+
+    @property
     def prompt(self):
         return f"""
 # Tools
@@ -119,6 +123,31 @@ class MCPTools(Tools):
                 await session.initialize()
                 result = await session.call_tool(name, args)
                 return result.content[0].text
+
+
+class NativeTools(Tools):
+    """Tool registry using native function calling."""
+
+    @property
+    def schemas(self) -> list:
+        """Return tool functions for native function calling."""
+        return [tool["function"] for tool in self.tools.values()]
+
+    @property
+    def prompt(self) -> str:
+        return ""
+
+    def has_tool_call(self, response) -> bool:
+        """Check whether the response contains native tool calls."""
+        return hasattr(response, "tool_calls") and response.tool_calls is not None
+
+    def parse_tool_call(self, response) -> dict:
+        """Parse the first tool call from a native response."""
+        tc = response.tool_calls[0]
+        args = tc["function"]["arguments"]
+        if isinstance(args, str):
+            args = json.loads(args)
+        return {"tool": tc["function"]["name"], "kwargs": args}
 
 
 class XMLTools(Tools):

@@ -47,21 +47,25 @@ class TinyAgent:
         """Perform a single step."""
         # Generate response and add to memory
         self.display("thinking")
-        response = self.llm.generate(self.memory.get_messages())
+        response = self.llm.generate(self.memory.get_messages(), tools=self.tools.schemas)
         self.display("response", response)
-        self.memory.add("assistant", response)
+        self.memory.add("assistant", response.content, tool_calls=response.tool_calls)
 
         # Parse planner's response to extract action if needed
-        response = self.planner.parse(response)
+        parsed = self.planner.parse(response)
 
         # Tool parsing and execution
-        if self.tools.has_tool_call(response):
-            return self._execute_action(response)
+        if self.tools.has_tool_call(parsed):
+            return self._execute_action(parsed)
+
+        # Native mode: content without tool calls is a direct answer
+        if hasattr(parsed, 'content') and not parsed.tool_calls:
+            return parsed.content
 
         self.memory.add("user", "OBSERVATION: No valid action found. Use the correct ACTION format.")
         return None
 
-    def _execute_action(self, action: str) -> str | None:
+    def _execute_action(self, action) -> str | None:
         """Execute a tool action."""
         try:
             tool_call = self.tools.parse_tool_call(action)
@@ -83,6 +87,9 @@ class TinyAgent:
 
         # Format the observation and add it to memory
         self.display("observation", observation)
-        self.memory.add("user", f"OBSERVATION: {observation}")
+        if self.tools.schemas:
+            self.memory.add("tool", str(observation))
+        else:
+            self.memory.add("user", f"OBSERVATION: {observation}")
 
         return None

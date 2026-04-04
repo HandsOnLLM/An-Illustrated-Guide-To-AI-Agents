@@ -9,9 +9,9 @@ from rich.console import Console
 from rich.table import Table
 
 import illustrated_agents
-from illustrated_agents import LLM, Memory, Reflector, Skills, TinyAgent, XMLReAct
+from illustrated_agents import LLM, Memory, Reflector, Skills, TinyAgent, XMLReAct, NativeReAct
 from illustrated_agents.display import label, Display, LOGO, FLAMINGO_LOGO
-from illustrated_agents.toolbox import create_code_tools
+from illustrated_agents.toolbox import create_code_tools, create_native_code_tools
 
 load_dotenv()
 console = Console()
@@ -74,39 +74,50 @@ def handle_command(cmd, agent):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--pink", action="store_true", help=argparse.SUPPRESS)
+    parser.add_argument("--native", action="store_true", help="Use native reasoning and function calling")
     args = parser.parse_args()
 
     # Model and API configuration from environment variables
     model = os.getenv("MODEL", "ollama/gemma4:e4b")
     api_base = os.getenv("API_BASE", "http://localhost:8080/v1")
     api_key = os.getenv("API_KEY", "sk-no-key-required")
-    llm = LLM(model=model, api_base=api_base, api_key=api_key)
 
     # CLI
     display = Display(pink=args.pink)
 
-    # Tools / Skills
-    tools = create_code_tools()
+    # Skills
     skills = Skills()
     file_analyzer_path = Path(illustrated_agents.__file__).parent / "skills" / "file_analyzer" / "SKILL.md"
     skills.load_from_file(file_analyzer_path)
 
-    # Agent
+    # Agent: native (reasoning_content + tool_calls) or text-based (THOUGHT/ACTION)
+    llm = LLM(model=model, api_base=api_base, api_key=api_key, think=args.native)
+    if args.native:
+        tools = create_native_code_tools()
+        planner = NativeReAct(max_steps=10)
+        if skills.skills:
+            tools.add_tool("use_skill", skills.use, "Activate a skill by name")
+    else:
+        tools = create_code_tools()
+        planner = XMLReAct(max_steps=10)
+
     agent = TinyAgent(
         llm=llm,
         memory=Memory(),
         tools=tools,
-        planner=XMLReAct(max_steps=10),
+        planner=planner,
         reflector=Reflector(interval=20),
         skills=skills,
         display=display,
     )
 
     # Display welcome message with model, tools, and skills
-    tool_names = ", ".join(tools.tools.keys())
+    tool_names = ", ".join(agent.tools.tools.keys())
     skill_names = ", ".join(skills.skills.keys())
+    mode = "native" if args.native else "text"
     console.print(FLAMINGO_LOGO if args.pink else LOGO)
     console.print(f"\n  [dim]Model:[/]  {model}")
+    console.print(f"  [dim]Mode:[/]   {mode}")
     console.print(f"  [dim]Tools:[/]  {tool_names}")
     console.print(f"  [dim]Skills:[/] {skill_names}")
     console.print("  [dim]Type[/] /help [dim]for commands.[/]\n")

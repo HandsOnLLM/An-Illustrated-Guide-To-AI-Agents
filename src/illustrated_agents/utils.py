@@ -11,6 +11,25 @@ from rich.panel import Panel
 from rich.console import Console
 
 
+TYPE_MAP = {str: "string", int: "integer", float: "number", bool: "boolean", list: "array", dict: "object"}
+
+
+def function_to_dict(func) -> dict:
+    """Convert a Python function to an OpenAI-style function schema."""
+    sig = inspect.signature(func)
+    properties = {}
+    required = []
+    for name, param in sig.parameters.items():
+        properties[name] = {"type": TYPE_MAP.get(param.annotation, "string")}
+        if param.default is inspect.Parameter.empty:
+            required.append(name)
+    return {
+        "name": func.__name__,
+        "description": inspect.getdoc(func) or "",
+        "parameters": {"type": "object", "properties": properties, "required": required},
+    }
+
+
 def _get_source(source):
     """Extract source code, optionally for a specific method or property."""
     if type(source) is property:

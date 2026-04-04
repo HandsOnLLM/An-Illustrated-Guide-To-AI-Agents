@@ -173,7 +173,7 @@ class TinyAgent:
         self.display("thinking")
         response = self.llm.generate(self.memory.get_messages())
         self.display("response", response)
-        self.memory.add("assistant", response)
+        self.memory.add("assistant", response.content)
 
         # Parse planner's response to extract action if needed
         response = self.planner.parse(response)

@@ -157,10 +157,15 @@ class Display:
             self._thinking_msg = random.choice(FLAMINGO_THINKING_MESSAGES if self._pink else THINKING_MESSAGES)
             threading.Thread(target=self._animate_thinking, daemon=True).start()
 
-        # Print THOUGHT
+        # Print THOUGHT (handles both text responses and native reasoning)
         elif event == "response":
             self._stop_thinking()
-            thought = self._extract_thought(data)
+            if hasattr(data, "reasoning") and data.reasoning:
+                thought = data.reasoning
+            elif hasattr(data, "content"):
+                thought = self._extract_thought(data.content)
+            else:
+                thought = self._extract_thought(data)
             if thought:
                 console.print(f"  {label('THOUGHT', 'dark_orange')}[dim italic]{thought}[/]\n")
 
