@@ -1,5 +1,5 @@
-from illustrated_agents import LLM
 from illustrated_agents.utils import CodeAnnotator, DiffViewer, ChapterOverview
+from illustrated_agents.chapters.ch2 import LLM
 from illustrated_agents.chapters import ch2
 
 
@@ -39,8 +39,8 @@ class TinyAgent:
         """Perform a single step."""
         # Generate response and add to memory
         response = self.llm.generate(self.memory.get_messages())
-        self.memory.add("assistant", response)
-        return response
+        self.memory.add("assistant", response.content)
+        return response.content
 
     def _execute_action(self, action: str) -> str | None:
         """Execute a tool action."""
@@ -73,7 +73,10 @@ memory_annotated = CodeAnnotator(
         5: "We keep track of a list of messages where each message is a dict with 'role' and 'content'.",
         (7, 9): """Whenever we add a new message, we append it to the list of messages and define the 
         role (e.g., 'user' or 'assistant') and the content of the message.""",
-        (11, 13): "To retrieve the conversation history, we simply return the list of messages stored in memory.",
+        (
+            11,
+            13,
+        ): "To retrieve the conversation history, we simply return the list of messages stored in memory.",
     },
 )
 

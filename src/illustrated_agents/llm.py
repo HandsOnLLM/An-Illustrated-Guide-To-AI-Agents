@@ -1,9 +1,16 @@
-from dataclasses import dataclass
-
 import litellm
 import ollama
 
+from enum import Enum
+from dataclasses import dataclass
+
 from illustrated_agents.utils import function_to_dict
+
+
+class Backend(Enum):
+    LITELLM = "litellm"
+    OPENAI = "openai"
+    OLLAMA = "ollama"
 
 
 @dataclass

@@ -38,4 +38,4 @@ package-dir = {"" = "src"}
 where = ["src"]
 
 [tool.ruff]
-line-length = 140
+line-length = 110

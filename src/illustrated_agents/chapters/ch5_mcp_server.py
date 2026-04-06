@@ -9,7 +9,7 @@ mcp = FastMCP("file_reader")
 # Define our tools
 @mcp.tool()
 def read_markdown(path: str) -> str:
-    """Read the content of a local markdown file.
+    """Read the content of a markdown file.
 
     Args:
         path (str): The path to the markdown file.

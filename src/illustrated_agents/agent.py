@@ -10,7 +10,16 @@ from illustrated_agents.display import Display
 class TinyAgent:
     """A minimal, modular, and educational agent framework."""
 
-    def __init__(self, llm: LLM, memory: Memory, tools: Tools, planner: ReAct, reflector: Reflector, skills: Skills, display: Display):
+    def __init__(
+        self,
+        llm: LLM,
+        memory: Memory,
+        tools: Tools,
+        planner: ReAct,
+        reflector: Reflector,
+        skills: Skills,
+        display: Display,
+    ):
         self.llm = llm
         self.memory = memory
         self.tools = tools
@@ -47,7 +56,7 @@ class TinyAgent:
         """Perform a single step."""
         # Generate response and add to memory
         self.display("thinking")
-        response = self.llm.generate(self.memory.get_messages(), tools=self.tools.schemas)
+        response = self.llm.generate(self.memory.get_messages(), tools=self.tools.tool_functions)
         self.display("response", response)
         self.memory.add("assistant", response.content, tool_calls=response.tool_calls)
 
@@ -59,7 +68,7 @@ class TinyAgent:
             return self._execute_action(parsed)
 
         # Native mode: content without tool calls is a direct answer
-        if hasattr(parsed, 'content') and not parsed.tool_calls:
+        if hasattr(parsed, "content") and not parsed.tool_calls:
             return parsed.content
 
         self.memory.add("user", "OBSERVATION: No valid action found. Use the correct ACTION format.")
@@ -87,7 +96,7 @@ class TinyAgent:
 
         # Format the observation and add it to memory
         self.display("observation", observation)
-        if self.tools.schemas:
+        if self.tools.tool_functions:
             self.memory.add("tool", str(observation))
         else:
             self.memory.add("user", f"OBSERVATION: {observation}")

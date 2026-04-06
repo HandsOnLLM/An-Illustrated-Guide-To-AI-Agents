@@ -1,7 +1,76 @@
-from illustrated_agents import LLM, Memory
-from illustrated_agents.tools import Tools, MCPTools
+import json
+from typing import Callable
+
+from illustrated_agents.tools import MCPTools
 from illustrated_agents.utils import DiffViewer, CodeAnnotator, ChapterOverview
 from illustrated_agents.chapters import ch4
+from illustrated_agents.chapters.ch2 import LLM, Response
+from illustrated_agents.chapters.ch4 import Memory
+
+
+class Tools:
+    """Tool registry for the Agent."""
+
+    def __init__(self):
+        self.registry = {}
+
+    def add_tool(self, name: str, func: Callable, description: str = ""):
+        """Register a tool that the Agent can use.
+
+        Arguments:
+            name: The name of the tool.
+            func: The function implementing the tool.
+            description: A description of the tool.
+        """
+        self.registry[name] = {"function": func, "description": description}
+
+    @property
+    def descriptions(self):
+        """Get descriptions of all registered tools."""
+        return "\n".join(f"`{tool}`: {self.registry[tool]['description']}" for tool in self.registry)
+
+    @property
+    def prompt(self):
+        return f"""
+# Tools
+
+If needed, you can only use the following tools to assist you in completing tasks:
+
+{self.descriptions}
+
+To use a tool, respond with JSON: {{"tool": "name", "kwargs": {{"param": "value"}}}}
+"""
+
+    def has_tool_call(self, response: Response) -> bool:
+        """Check whether there is a tool call in `text`."""
+        return '"tool":' in response.content or '"tool:"' in response.content
+
+    def parse_tool_call(self, response: Response) -> dict:
+        """Parse a JSON tool call from text."""
+        text = response.content
+        start, end = text.find("{"), text.rfind("}") + 1
+        tool_call = json.loads(text[start:end])
+        return tool_call
+
+    def run_tool(self, tool_call: dict) -> any:
+        """Run a registered tool.
+
+        Arguments:
+            tool_call: A parsed tool call dict with "tool" and "kwargs" keys.
+        """
+        name, kwargs = tool_call["tool"], tool_call.get("kwargs", {})
+
+        # Handle registered tools
+        if name in self.registry:
+            tool_func = self.registry[name]["function"]
+            return tool_func(**kwargs)
+
+        return f"Tool '{name}' not found."
+
+    @property
+    def schemas(self):
+        """Used only for native tool-calling."""
+        return None
 
 
 class TinyAgent:
@@ -36,15 +105,15 @@ class TinyAgent:
         if self.tools.has_tool_call(response):
             return self._execute_action(response)
 
-        return response
+        return response.content
 
-    def _execute_action(self, action: str) -> str | None:
+    def _execute_action(self, response: Response) -> str | None:
         """Execute a tool action."""
-        tool_call = self.tools.parse_tool_call(action)
+        tool_call = self.tools.parse_tool_call(response)
 
         # Execute tool and extract the observation
         observation = self.tools.run_tool(tool_call)
-        obs_prompt = f"OBSERVATION: {action} -> {observation}"
+        obs_prompt = f"OBSERVATION: {response.content} -> {observation}"
         self.memory.add("user", obs_prompt)
 
         return obs_prompt
@@ -80,7 +149,6 @@ agent_init_annotated = CodeAnnotator(
         (9, 12): """
 A system prompt is constructed that includes the base instruction and the tool descriptions. 
 This system prompt is added to memory at initialization so that the LLM is aware of the tools from the very beginning.
-Note that we use `user` since not all LLMs have a separate system role.
 """,
     },
 )
@@ -129,12 +197,21 @@ run_mcp_tool_annotated = CodeAnnotator(
     annotations={
         6: "This is the main function for loading the tools.",
         9: "This the the path to your MCP server.",
-        (15, 20): """The tools are retrieved from the MCP Server using `list_tools()`. The `list_tools()` function is a 
+        (
+            15,
+            20,
+        ): """The tools are retrieved from the MCP Server using `list_tools()`. The `list_tools()` function is a 
 standardized way to query an MCP server for its available tools. This will always return a list of tool metadata, including 
 tool names, descriptions, and parameter specifications.""",
-        (25, 30): """The listed tools are added to the registry that we defined previously in Chapter 5 using the `Tools` class. 
+        (
+            25,
+            30,
+        ): """The listed tools are added to the registry that we defined previously in Chapter 5 using the `Tools` class. 
 Here, the `_make_tool_caller` creates a callable function for each tool that knows how to call the MCP server with the correct parameters.""",
-        (42, 46): """As before, the MCP Server is called and the corresponding tool, together with their arguments, are called using 
+        (
+            42,
+            46,
+        ): """As before, the MCP Server is called and the corresponding tool, together with their arguments, are called using 
 the MCP Server. The execution is done with `session.call_tool` which again is a standardized function according to the MCP Protocol.""",
     },
 )

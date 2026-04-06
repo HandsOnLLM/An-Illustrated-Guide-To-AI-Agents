@@ -58,7 +58,7 @@ def handle_command(cmd, agent):
 
     # `/tools` command lists available tools with descriptions
     elif cmd == "/tools":
-        for name, tool in agent.tools.tools.items():
+        for name, tool in agent.tools.registry.items():
             console.print(f"  [yellow]{name}[/] - [dim]{tool['description']}[/]")
 
     # `/skills` command lists available skills with descriptions
@@ -112,7 +112,7 @@ def main():
     )
 
     # Display welcome message with model, tools, and skills
-    tool_names = ", ".join(agent.tools.tools.keys())
+    tool_names = ", ".join(agent.tools.registry.keys())
     skill_names = ", ".join(skills.skills.keys())
     mode = "native" if args.native else "text"
     console.print(FLAMINGO_LOGO if args.pink else LOGO)
@@ -126,7 +126,9 @@ def main():
         # User input
         try:
             w = console.width
-            print(f"\033[48;5;237m \033[36m\u258e\033[97;1m >  {' ' * (w - 6)}\033[{w - 6}D", end="", flush=True)
+            print(
+                f"\033[48;5;237m \033[36m\u258e\033[97;1m >  {' ' * (w - 6)}\033[{w - 6}D", end="", flush=True
+            )
             query = input().strip()
             print("\033[0m")
         except (KeyboardInterrupt, EOFError):

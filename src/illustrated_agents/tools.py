@@ -18,9 +18,9 @@ class Tools:
     """Tool registry for the Agent."""
 
     def __init__(self):
-        self.tools = {}
+        self.registry = {}
 
-    def add_tool(self, name: str, func: Callable, description: str):
+    def add_tool(self, name: str, func: Callable, description: str = ""):
         """Register a tool that the agent can use.
 
         Arguments:
@@ -28,7 +28,7 @@ class Tools:
             func: The function implementing the tool.
             description: A description of the tool.
         """
-        self.tools[name] = {"function": func, "description": description}
+        self.registry[name] = {"function": func, "description": description}
 
     def run_tool(self, tool_call: dict) -> any:
         """Run a registered tool.
@@ -39,8 +39,8 @@ class Tools:
         name, kwargs = tool_call["tool"], tool_call.get("kwargs", {})
 
         # Handle registered tools
-        if name in self.tools:
-            tool_func = self.tools[name]["function"]
+        if name in self.registry:
+            tool_func = self.registry[name]["function"]
             return tool_func(**kwargs)
 
         return f"Tool '{name}' not found."
@@ -56,7 +56,7 @@ class Tools:
         return tool_call
 
     @property
-    def schemas(self):
+    def tool_functions(self):
         return None
 
     @property
@@ -74,7 +74,7 @@ To use a tool, respond with JSON: {{"tool": "name", "kwargs": {{"param": "value"
     @property
     def descriptions(self):
         """Get descriptions of all registered tools."""
-        return "\n".join(f"`{tool}`: {self.tools[tool]['description']}" for tool in self.tools)
+        return "\n".join(f"`{tool}`: {self.registry[tool]['description']}" for tool in self.registry)
 
 
 class MCPTools(Tools):
@@ -96,7 +96,7 @@ class MCPTools(Tools):
                 async with ClientSession(read, write) as session:
                     await session.initialize()
                     tools = await session.list_tools()
-                    return tools.tools
+                    return tools.registry
 
         mcp_tools = asyncio.run(fetch())
 
@@ -129,9 +129,9 @@ class NativeTools(Tools):
     """Tool registry using native function calling."""
 
     @property
-    def schemas(self) -> list:
+    def tool_functions(self) -> list:
         """Return tool functions for native function calling."""
-        return [tool["function"] for tool in self.tools.values()]
+        return [tool["function"] for tool in self.registry.values()]
 
     @property
     def prompt(self) -> str:
@@ -154,7 +154,7 @@ class XMLTools(Tools):
     """Tool registry for the Agent with XML parsing and human-in-the-loop approval."""
 
     def __init__(self, requires_approval: list[str] = []):
-        self.tools = {}
+        self.registry = {}
         self.requires_approval = requires_approval
 
     def run_tool(self, tool_call: dict) -> str:

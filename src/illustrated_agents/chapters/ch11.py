@@ -134,7 +134,16 @@ class Display:
 class TinyAgent:
     """A minimal, modular, and educational agent framework."""
 
-    def __init__(self, llm: LLM, memory: Memory, tools: Tools, planner: ReAct, reflector: Reflector, skills: Skills, display=Display):
+    def __init__(
+        self,
+        llm: LLM,
+        memory: Memory,
+        tools: Tools,
+        planner: ReAct,
+        reflector: Reflector,
+        skills: Skills,
+        display=Display,
+    ):
         self.llm = llm
         self.memory = memory
         self.tools = tools
@@ -217,7 +226,7 @@ def chat(agent):
     display = agent.display
 
     # Agent Overview
-    console.print(f"\n  [dim]Tools:[/]  {', '.join(agent.tools.tools.keys())}")
+    console.print(f"\n  [dim]Tools:[/]  {', '.join(agent.tools.registry.keys())}")
     console.print("  [dim]Type[/] exit [dim]to quit.[/]\n")
 
     while True:
@@ -252,7 +261,11 @@ def chat(agent):
 what_we_built = ChapterOverview(
     [
         ("agent.py", "updated", "Added printing to the `Display` to see its intermediate steps."),
-        ("display.py", "new", "A new `Display` class to format the agent's THOUGHTS, ACTIONS, and OBSERVATIONS."),
+        (
+            "display.py",
+            "new",
+            "A new `Display` class to format the agent's THOUGHTS, ACTIONS, and OBSERVATIONS.",
+        ),
         ("llm.py", None, ""),
         ("memory.py", None, ""),
         ("planning.py", "updated", "Added XML-based instructions for tool calling."),
@@ -279,7 +292,10 @@ tools_annotated = CodeAnnotator(
         ): "Human-in-the-loop: prompt the user with <code>input()</code> before running dangerous tools. If denied, return a message instead.",
         32: "We now search for <code>&lt;tool&gt;</code> tags instead of JSON tool calls.",
         36: "Since there will be only a single tool call per response, we can simplify the parsing logic to just look for the first <code>&lt;tool&gt;</code> tag.",
-        (38, 42): "There might be multiple keyword arguments (kwargs) in the tool call that need to be extracted.",
+        (
+            38,
+            42,
+        ): "There might be multiple keyword arguments (kwargs) in the tool call that need to be extracted.",
     },
 )
 
