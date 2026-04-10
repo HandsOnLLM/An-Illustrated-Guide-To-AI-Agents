@@ -14,7 +14,7 @@ from illustrated_agents.chapters import ch2, ch5
 TYPE_MAP = {str: "string", int: "integer", float: "number", bool: "boolean", list: "array", dict: "object"}
 
 
-def function_to_dict(function) -> dict:
+def tool_to_schema(function) -> dict:
     """Convert a Python function to an OpenAI-style tool schema."""
     signature = inspect.signature(function)
 
@@ -173,9 +173,9 @@ class NativeTools(Tools):
     """Tool registry using native function calling."""
 
     @property
-    def tool_functions(self) -> list:
+    def schemas(self) -> list:
         """Return tool functions for native function calling."""
-        return [tool["function"] for tool in self.registry.values()]
+        return [tool_to_schema(tool["function"]) for tool in self.registry.values()]
 
     @property
     def prompt(self) -> str:
@@ -183,14 +183,15 @@ class NativeTools(Tools):
         return ""
 
     def has_tool_call(self, response) -> bool:
-        """Check whether the response contains native tool calls."""
-        return hasattr(response, "tool_calls") and response.tool_calls is not None
+        """Check whether the tool call is not empty."""
+        return response.tool_call is not None
 
     def parse_tool_call(self, response) -> dict:
         """Parse a tool call."""
-        tool_call = response.tool_calls[0]
-        args = json.loads(tool_call["function"]["arguments"])
-        return {"tool": tool_call["function"]["name"], "kwargs": args}
+        args = response.tool_call["function"]["arguments"]
+        if isinstance(args, str):
+            args = json.loads(args)
+        return {"tool": response.tool_call["function"]["name"], "kwargs": args}
 
 
 class TinyAgent:
@@ -257,36 +258,15 @@ what_we_built = ChapterOverview(
 llm_diff = DiffViewer(ch2.LLM.openai, LLM.openai, "ch2.LLM", "ch5.LLM")
 tinyagents_diff = DiffViewer(ch5.TinyAgent, TinyAgent, "ch5.TinyAgent", "ch5_native.TinyAgent")
 
-# tinyagents_diff = DiffViewer(ch4.TinyAgent, TinyAgent, "ch4.TinyAgent", "ch5.TinyAgent")
-
-
-# agent_init_annotated = CodeAnnotator(
-#     TinyAgent.__init__,
-#     annotations={
-#         (9, 12): """
-# A system prompt is constructed that includes the base instruction and the tool descriptions.
-# This system prompt is added to memory at initialization so that the LLM is aware of the tools from the very beginning.
-# """,
-#     },
-# )
-
-# agent_step_annotated = CodeAnnotator(
-#     TinyAgent._step,
-#     annotations={
-#         (7, 9): """
-# After generating a response, we check if the response contains a tool call. If it does, we execute the tool action instead of returning the LLM's response directly.
-# """,
-#     },
-# )
-
-# agent_execute_action_annotated = CodeAnnotator(
-#     TinyAgent._execute_action,
-#     annotations={
-#         3: "(1) The tool call is parsed to extract the tool name and arguments.",
-#         6: "(2) the tool is executed using the `Tools` class which looks up the tool in the registry and calls it.",
-#         8: "(3) The result of the tool execution is stored as an observation in memory.",
-#     },
-# )
+what_we_built = ChapterOverview(
+    [
+        ("agent.py", "updated", "Updated `TinyAgent` to handle native tool calling."),
+        ("llm.py", "updated", "Extract tool calls from LLM response metadata instead of text parsing."),
+        ("memory.py", "updated", "Track tool calling and observations in memory."),
+        ("toolbox.py", None, ""),
+        ("tools.py", "updated", "Create `NativeTools` for native tool calling."),
+    ]
+)
 
 
 add_nativetool_annotated = CodeAnnotator(

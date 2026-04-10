@@ -39,15 +39,15 @@ All examples can be run in Google Colab for **free** using their T4 GPU. You hav
 |---|---|
 | Chapter 1: Introduction to AI Agents  | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](...)   |
 | Chapter 2: Large Language Models  | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](...)  |
-| Chapter 3: Reasoning Large Language Models  | No code  |
+| Chapter 3: Reasoning Large Language Models  |  [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](...)  |
 | Chapter 4: Memory  | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](...)  |
 | Chapter 5: Tools  | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](...)  |
 | Chapter 6: Planning  | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](...)  |
-| Chapter 7: Evaluation | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](...)  |
+| Chapter 7: Evaluation | No code  |
 | Chapter 8: Multi-Agent Collaboration  | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](...)  |
 | Chapter 9: Multimodal Understanding  | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](...)  |
 | Chapter 10: Multimodal Generation  | No code  |
-| Chapter 11: Coding Agents  | No code  |
+| Chapter 11: Coding Agents  |  [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](...)  |
 | Chapter 12: Efficient Large Language Models  | No code  |
 
 > [!TIP]
