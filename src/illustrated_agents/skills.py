@@ -18,7 +18,7 @@ class Skills:
     def __init__(self):
         self.skills = {}
 
-    def load_from_file(self, path: str):
+    def add_skill(self, path: str):
         """Load a skill from a SKILL.md file"""
         content = Path(path).read_text(encoding="utf-8")
 
@@ -38,12 +38,6 @@ class Skills:
             "description": description,
             "instructions": body,
         }
-
-    def use(self, name: str) -> str:
-        """Activate a skill by name (can be registered as a tool directly)."""
-        if name in self.skills:
-            return f"Skill '{name}' activated. Follow these instructions:\n\n{self.skills[name]['instructions']}"
-        return f"Skill '{name}' not found. Available: {', '.join(self.skills.keys())}"
 
     def activate(self, tool_call: dict) -> str:
         """Activate a skill and return formatted observation.
@@ -66,7 +60,9 @@ class Skills:
         return f"""
 # Skills
 
-You have specialized skills available. To use a skill, call it like a tool but without any arguments except the skill name.
+You have specialized skills available. To use a skill,
+call it like a tool by referencing their name.
+
 The skill will provide detailed instructions for completing the task.
 
 Available skills:
@@ -77,3 +73,12 @@ Available skills:
     def descriptions(self) -> str:
         """Get short descriptions of all skills."""
         return "\n".join(f"- `{name}`: {skill['description']}" for name, skill in self.skills.items())
+
+    def as_tool(self, name: str):
+        """Convert a skill's instruction to a function so it can be called as a tool."""
+
+        def skill_as_a_tool():
+            return self.skills[name]["instructions"]
+
+        skill_as_a_tool.__name__ = name
+        return skill_as_a_tool

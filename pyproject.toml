@@ -17,7 +17,6 @@ dependencies = [
     "ollama>=0.6.1",
     "pygments>=2.19.2",
     "rich>=14.3.2", 
-    "python-dotenv>=1.2.1",
     "mcp>=1.26.0"
 ]
 

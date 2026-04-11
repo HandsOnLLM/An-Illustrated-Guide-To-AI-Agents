@@ -1,13 +1,12 @@
 import litellm
 import ollama
 
-from enum import Enum
+from openai import OpenAI
+from enum import StrEnum
 from dataclasses import dataclass
 
-from illustrated_agents.utils import function_to_dict
 
-
-class Backend(Enum):
+class Backend(StrEnum):
     LITELLM = "litellm"
     OPENAI = "openai"
     OLLAMA = "ollama"
@@ -18,39 +17,114 @@ class Response:
     """Structured response from LLM calls."""
 
     content: str = ""
-    reasoning: str = ""
-    tool_calls: list = None
+    reasoning: str = None
+    tool_call: dict = None
 
 
 class LLM:
-    def __init__(self, model: str, think: bool = False, **kwargs):
+    def __init__(
+        self,
+        model: str,
+        backend: Backend,
+        api_key: str = "no_key_required",
+        api_base: str = None,
+        think: bool = False,
+        **kwargs,
+    ):
         """Initialize the LLM with the given model."""
         self.model = model
+        self.backend = backend
+        self.api_key = api_key
+        self.api_base = api_base
         self.think = think
         self.kwargs = kwargs
+
+        if self.backend == Backend.OPENAI:
+            self.client = OpenAI(base_url=api_base, api_key=api_key)
 
     def generate(self, messages: list[dict], tools: list = None) -> Response:
         """Generate a response from the LLM given a list of messages."""
 
         # LiteLLM
-        if "/" in self.model:
-            kwargs = {**self.kwargs}
-            if tools:
-                kwargs["tools"] = [{"type": "function", "function": function_to_dict(function)} for function in tools]
-            message = litellm.completion(model=self.model, messages=messages, **kwargs).choices[0].message
-            tool_calls = [tool_call.model_dump() for tool_call in message.tool_calls] if message.tool_calls else None
+        if self.backend == Backend.LITELLM:
+            return self.litellm(messages, tools)
 
-        # Native Ollama
+        # OpenAI API
+        elif self.backend == Backend.OPENAI:
+            return self.openai(messages, tools)
+
+        # Ollama
+        elif self.backend == Backend.OLLAMA:
+            return self.ollama(messages, tools)
+
         else:
-            message = ollama.chat(model=self.model, messages=messages, tools=tools, think=self.think).message
-            tool_calls = (
-                [{"function": {"name": tc.function.name, "arguments": tc.function.arguments}} for tc in message.tool_calls]
-                if message.tool_calls
-                else None
-            )
+            raise ValueError(f"Unsupported backend: {self.backend}")
+
+    def ollama(self, messages: list[dict], tools: list = None) -> Response:
+        """Generate a response from Ollama."""
+        response = ollama.chat(
+            model=self.model,
+            messages=messages,
+            think=self.think,
+            tools=tools,
+            **self.kwargs,
+        )
+
+        # Format as Response dataclass
+        message = response.message
+        has_tool_call = hasattr(message, "tool_calls") and message.tool_calls
+        tool_call = message.tool_calls[0].model_dump() if has_tool_call else None
 
         return Response(
-            content=message.content or "",
-            reasoning=getattr(message, "reasoning_content", None) or getattr(message, "thinking", None) or "",
-            tool_calls=tool_calls,
+            content=message.content,
+            reasoning=getattr(message, "thinking", None),
+            tool_call=tool_call,
+        )
+
+    def openai(self, messages: list[dict], tools: list = None) -> Response:
+        """Generate a response from the OpenAI API."""
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=messages,
+            tools=tools if tools else None,
+            extra_body={"chat_template_kwargs": {"enable_thinking": False}, "reasoning_effort": "none"}
+            if not self.think
+            else None,
+            **self.kwargs,
+        )
+
+        # Format as Response dataclass
+        message = response.choices[0].message
+        has_tool_call = hasattr(message, "tool_calls") and message.tool_calls
+        tool_call = message.tool_calls[0].model_dump() if has_tool_call else None
+
+        return Response(
+            content=message.content,
+            reasoning=getattr(message, "reasoning_content", None) or getattr(message, "reasoning", None),
+            tool_call=tool_call,
+        )
+
+    def litellm(self, messages: list[dict], tools: list = None) -> Response:
+        """Generate a response from LiteLLM."""
+        response = litellm.completion(
+            model=self.model,
+            messages=messages,
+            api_base=self.api_base,
+            api_key=self.api_key,
+            tools=tools,
+            extra_body={"chat_template_kwargs": {"enable_thinking": False}, "reasoning_effort": "none"}
+            if not self.think
+            else None,
+            **self.kwargs,
+        )
+
+        # Format as Response dataclass
+        message = response.choices[0].message
+        has_tool_call = hasattr(message, "tool_calls") and message.tool_calls
+        tool_call = message.tool_calls[0].model_dump() if has_tool_call else None
+
+        return Response(
+            content=message.content,
+            reasoning=getattr(message, "reasoning_content", None) or getattr(message, "reasoning", None),
+            tool_call=tool_call,
         )

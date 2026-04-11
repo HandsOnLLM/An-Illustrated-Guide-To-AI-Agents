@@ -1,7 +1,4 @@
-"""TinyAgent display handler using Rich for formatted console output."""
-
 import random
-import re
 import time
 import threading
 
@@ -9,7 +6,8 @@ from rich.console import Console
 from rich.live import Live
 from rich.text import Text
 from rich.rule import Rule
-from rich.syntax import Syntax
+
+from illustrated_agents.llm import Response
 
 console = Console()
 
@@ -148,42 +146,31 @@ class Display:
         self._animating = False
         self._pink = pink
 
-    def __call__(self, event: str, data: str | dict = None) -> None:
+    def __call__(self, event: str, data: str | Response = None) -> None:
+
         # Animate "thinking"
         if event == "thinking":
             self._animating = True
             self._live = Live(console=console, refresh_per_second=8, transient=True)
             self._live.start()
-            self._thinking_msg = random.choice(FLAMINGO_THINKING_MESSAGES if self._pink else THINKING_MESSAGES)
+            self._thinking_msg = random.choice(
+                FLAMINGO_THINKING_MESSAGES if self._pink else THINKING_MESSAGES
+            )
             threading.Thread(target=self._animate_thinking, daemon=True).start()
 
         # Print THOUGHT (handles both text responses and native reasoning)
         elif event == "response":
             self._stop_thinking()
-            if hasattr(data, "reasoning") and data.reasoning:
-                thought = data.reasoning
-            elif hasattr(data, "content"):
-                thought = self._extract_thought(data.content)
-            else:
-                thought = self._extract_thought(data)
-            if thought:
-                console.print(f"  {label('THOUGHT', 'dark_orange')}[dim italic]{thought}[/]\n")
+            console.print(f"  [bold dark_orange]{'THOUGHT':<13}[/][dim italic]{data.reasoning}[/]")
 
         # Print ACTION
         elif event == "tool_call" and data:
-            tool = data.get("tool")
-            kwargs = data.get("kwargs", {})
-            if tool != "final_answer":
-                if tool == "execute_python":
-                    console.print(f"  {label('ACTION', 'yellow')}[yellow]{tool}[/]")
-                    console.print(Syntax(kwargs.get("code", ""), "python", line_numbers=True))
-                else:
-                    args_str = ", ".join(f"{k}={v!r}" for k, v in kwargs.items())
-                    console.print(f"  {label('ACTION', 'yellow')}[yellow]{tool}({args_str})[/]")
+            tool = data.tool_call["function"]["name"]
+            kwargs = data.tool_call["function"]["arguments"]
+            console.print(f"  {label('ACTION', 'yellow')}[yellow]{tool}({kwargs})[/]")
 
         # Print OBSERVATION
         elif event == "observation":
-            # trimmed_observation = data[:1000] + "\n[TRUNCATED]" if len(data) > 1000 else data
             console.print(f"  {label('OBSERVATION', 'green')}{data}\n")
             console.print(Rule(style="dim"), end="\n\n")
 
@@ -195,11 +182,6 @@ class Display:
             self._live.update(Text(f"  {self._thinking_msg}  {frame}", style="dark_orange"))
             time.sleep(0.15)
             i += 1
-
-    def _extract_thought(self, text: str) -> str | None:
-        """Extract the thought from the agent's response."""
-        match = re.search(r"THOUGHT:\s*(.+?)(?=ACTION:|$)", text, re.IGNORECASE | re.DOTALL)
-        return match.group(1).strip() if match else None
 
     def _stop_thinking(self) -> None:
         """Stop the thinking animation."""

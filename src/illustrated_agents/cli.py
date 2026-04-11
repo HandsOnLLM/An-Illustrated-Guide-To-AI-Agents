@@ -1,7 +1,4 @@
-"""Interactive CLI for TinyAgent using Rich."""
-
 import argparse
-import os
 
 from dotenv import load_dotenv
 from pathlib import Path
@@ -9,9 +6,9 @@ from rich.console import Console
 from rich.table import Table
 
 import illustrated_agents
-from illustrated_agents import LLM, Memory, Reflector, Skills, TinyAgent, XMLReAct, NativeReAct
+from illustrated_agents import LLM, Memory, Skills, TinyAgent, NativeReAct
 from illustrated_agents.display import label, Display, LOGO, FLAMINGO_LOGO
-from illustrated_agents.toolbox import create_code_tools, create_native_code_tools
+from illustrated_agents.toolbox import create_native_code_tools
 
 load_dotenv()
 console = Console()
@@ -73,40 +70,43 @@ def handle_command(cmd, agent):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--pink", action="store_true", help=argparse.SUPPRESS)
-    parser.add_argument("--native", action="store_true", help="Use native reasoning and function calling")
+    parser.add_argument("-p", "--pink", action="store_true", help=argparse.SUPPRESS)
+    parser.add_argument("-b", "--backend", type=str, help="Choose LLM backend", default="openai")
+    parser.add_argument(
+        "-m", "--model", type=str, help="LLM model name (overrides MODEL env var)", default="gemma4:e4b"
+    )
+    parser.add_argument(
+        "-ab", "--api_base", type=str, help="API base URL", default="http://localhost:11434/v1/"
+    )
+    parser.add_argument("-ak", "--api_key", type=str, help="API key", default="sk-no-key-required")
     args = parser.parse_args()
-
-    # Model and API configuration from environment variables
-    model = os.getenv("MODEL", "ollama/gemma4:e4b")
-    api_base = os.getenv("API_BASE", "http://localhost:8080/v1")
-    api_key = os.getenv("API_KEY", "sk-no-key-required")
 
     # CLI
     display = Display(pink=args.pink)
 
+    # LLM
+    llm = LLM(
+        model=args.model, api_base=args.api_base, api_key=args.api_key, backend=args.backend, think=True
+    )
+
     # Skills
     skills = Skills()
     file_analyzer_path = Path(illustrated_agents.__file__).parent / "skills" / "file_analyzer" / "SKILL.md"
-    skills.load_from_file(file_analyzer_path)
+    skills.add_skill(file_analyzer_path)
 
-    # Agent: native (reasoning_content + tool_calls) or text-based (THOUGHT/ACTION)
-    llm = LLM(model=model, api_base=api_base, api_key=api_key, think=args.native)
-    if args.native:
-        tools = create_native_code_tools()
-        planner = NativeReAct(max_steps=10)
-        if skills.skills:
-            tools.add_tool("use_skill", skills.use, "Activate a skill by name")
-    else:
-        tools = create_code_tools()
-        planner = XMLReAct(max_steps=10)
+    # Tools
+    tools = create_native_code_tools()
+    tools.add_tool("use_skill", skills.as_tool("use_skill"))
 
+    # ReAct planner with native reasoning and tool calling (no text parsing needed)
+    planner = NativeReAct(max_steps=10)
+
+    # Coding Agent
     agent = TinyAgent(
         llm=llm,
         memory=Memory(),
         tools=tools,
         planner=planner,
-        reflector=Reflector(interval=20),
         skills=skills,
         display=display,
     )
@@ -114,10 +114,8 @@ def main():
     # Display welcome message with model, tools, and skills
     tool_names = ", ".join(agent.tools.registry.keys())
     skill_names = ", ".join(skills.skills.keys())
-    mode = "native" if args.native else "text"
     console.print(FLAMINGO_LOGO if args.pink else LOGO)
-    console.print(f"\n  [dim]Model:[/]  {model}")
-    console.print(f"  [dim]Mode:[/]   {mode}")
+    console.print(f"\n  [dim]Model:[/]  {args.model}")
     console.print(f"  [dim]Tools:[/]  {tool_names}")
     console.print(f"  [dim]Skills:[/] {skill_names}")
     console.print("  [dim]Type[/] /help [dim]for commands.[/]\n")

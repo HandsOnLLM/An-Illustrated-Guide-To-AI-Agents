@@ -1,16 +1,9 @@
-"""A collection of tools for TinyAgent.
-
-Simple tools are plain functions that can be registered directly.
-Code tools require a workspace for filesystem safety.
-"""
-
 import subprocess
 import sys
 from pathlib import Path
 from pygments import highlight
 from pygments.lexers import PythonLexer
 from pygments.formatters import TerminalFormatter
-from illustrated_agents import XMLTools
 from illustrated_agents import NativeTools
 
 
@@ -142,14 +135,6 @@ def _build_code_tools(workspace: str = ".") -> dict:
         "execute_python": (execute_python, "Run Python code: execute_python(code: str)"),
         "show_python": (show_python, "Display Python code with syntax highlighting: show_python(code: str)"),
     }
-
-
-def create_code_tools(workspace: str = ".") -> XMLTools:
-    """Create coding tools scoped to a workspace directory."""
-    tools = XMLTools(requires_approval=["execute_python", "write_file"])
-    for name, (func, desc) in _build_code_tools(workspace).items():
-        tools.add_tool(name, func, desc)
-    return tools
 
 
 def create_native_code_tools(workspace: str = ".") -> NativeTools:

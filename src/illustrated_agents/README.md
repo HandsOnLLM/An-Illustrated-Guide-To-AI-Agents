@@ -11,32 +11,31 @@ The general idea is that each module is self-contained and added to the `TinyAge
 # Modules to augment your Agent
 from illustrated_agents.llm import LLM  # llm.py
 from illustrated_agents.memory import Memory  # memory.py
-from illustrated_agents.tools import MCPTools  # tools.py
-from illustrated_agents.planning import ReAct  # planning.py
-from illustrated_agents.reflection import Reflector  # reflection.py
+from illustrated_agents.tools import NativeTools  # tools.py
+from illustrated_agents.planning import NativeReAct  # planning.py
 from illustrated_agents.skills import Skills  # skills.py
+from illustrated_agents.toolbox import get_weather  # toolbox.py
 
 # The TinyAgent
 from illustrated_agents.agent import TinyAgent  # tinyagent.py
 
-# Choose an LLM
-llm = LLM(model="ollama/gemma4:e4b")
+# Choose an LLM - Using Ollama through an OpenAI endpoint
+llm = LLM(model="my_model", api_base="http://localhost:11434/v1/")
 
 # Add Memory (simple conversation memory)
 memory = Memory()
 
-# Add Tools through a local MCP Server and Client
-tools = MCPTools()
-
-# Create autonomous behavior through THOUGHT/ACTION/OBSERVATION cycles
+# Create autonomous behavior through explicit THOUGHT/ACTION/OBSERVATION cycles
 react = ReAct(max_steps=10)
-
-# Reflect on current situation every 5 steps
-reflector = Reflector(interval=5)
 
 # Add SKILL.md
 skills = Skills()
-skills.load_from_file(path_to_my_skill)
+skills.add_skill(path_to_my_skill.md)
+
+# Add Tools through explicit tool calling
+tools = Tools()
+tools.add_tool("my_tool", my_tool)
+tools.add_tool("my_skill", skills.as_tool("my_skill"))
 
 # Create agent
 agent = TinyAgent(
@@ -44,7 +43,6 @@ agent = TinyAgent(
     tools=tools, 
     memory=memory, 
     planner=react, 
-    reflector=reflector, 
     skills=skills
 )
 ```
