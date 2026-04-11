@@ -83,7 +83,6 @@ class TinyAgent:
         self.memory = memory
         self.tools = tools
         self.planner = planner
-        self.reflector = None  # Chapter 6: Add Reflection
         self.skills = None  # Chapter 6: Add Skills
 
         # Build system prompt with all components

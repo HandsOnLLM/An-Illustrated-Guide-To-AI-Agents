@@ -1,17 +1,19 @@
-from illustrated_agents import LLM, Memory, Tools, ReAct, Reflector, Skills
+from illustrated_agents.chapters import ch5_native, ch6_skills
+from illustrated_agents.chapters.ch2 import Response
+from illustrated_agents.chapters.ch5_native import Tools, LLM, Memory
+from illustrated_agents.chapters.ch6 import ReAct
+from illustrated_agents.chapters.ch6_skills import Skills
 from illustrated_agents.utils import DiffViewer, ChapterOverview
-from illustrated_agents.chapters import ch4, ch6_skills
 
 
 class TinyAgent:
     """A minimal, modular, and educational agent framework."""
 
-    def __init__(self, llm: LLM, memory: Memory, tools: Tools, planner: ReAct, reflector: Reflector, skills: Skills):
+    def __init__(self, llm: LLM, memory: Memory, tools: Tools, planner: ReAct, skills: Skills):
         self.llm = llm
         self.memory = memory
         self.tools = tools
         self.planner = planner
-        self.reflector = reflector
         self.skills = skills
 
         # Build system prompt with all components
@@ -21,17 +23,12 @@ class TinyAgent:
         system_prompt += self.skills.prompt
         self.memory.add("system", system_prompt)
 
-    def run(self, task: str, image_url: str = None) -> str:
+    def run(self, task: str, image_data: str = None) -> str:
         """Run the agent on a task."""
-        self.memory.add("user", task, image_url=image_url)
+        self.memory.add("user", task, image_data=image_data)
 
         # `Autonomy` loop
         for step in range(self.planner.max_steps):
-            # Reflection step before taking the next action
-            if self.reflector.should_reflect(step):
-                self.memory.add("user", self.reflector.prompt)
-
-            # Perform a step and check for completion
             result = self._step()
             if result is not None:
                 return result
@@ -41,8 +38,8 @@ class TinyAgent:
     def _step(self) -> str | None:
         """Perform a single step."""
         # Generate response and add to memory
-        response = self.llm.generate(self.memory.get_messages())
-        self.memory.add("assistant", response.content)
+        response = self.llm.generate(self.memory.get_messages(), tools=self.tools.schemas)
+        self.memory.add("assistant", response.content, tool_call=response.tool_call)
 
         # Parse planner's response to extract action if needed
         response = self.planner.parse(response)
@@ -51,27 +48,28 @@ class TinyAgent:
         if self.tools.has_tool_call(response):
             return self._execute_action(response)
 
+        # Stopping mechanism for native tool calling
+        if not response.tool_call:
+            return response.content
+
         return None
 
-    def _execute_action(self, action: str) -> str | None:
+    def _execute_action(self, response: Response) -> str | None:
         """Execute a tool action."""
-        tool_call = self.tools.parse_tool_call(action)
+        tool_call = self.tools.parse_tool_call(response)
 
         # Final answer ends the loop
         if tool_call["tool"] == "final_answer":
             return tool_call.get("kwargs", "")
 
-        # Activate skill and extract the observation
-        if tool_call["tool"] == "use_skill":
-            observation = self.skills.activate(tool_call)
-
         # Execute tool and extract the observation
-        else:
-            observation = self.tools.run_tool(tool_call)
+        observation = self.tools.run_tool(tool_call)
 
-        # Format the observation and add it to memory
-        obs_prompt = f"OBSERVATION: {action} -> {observation}"
-        self.memory.add("user", obs_prompt)
+        # Native tool calling should get the role `tool`
+        if self.tools.schemas:
+            self.memory.add("tool", str(observation))
+        else:
+            self.memory.add("user", f"OBSERVATION: {observation}")
 
         return None
 
@@ -82,11 +80,23 @@ class Memory:
     def __init__(self):
         self.messages = []
 
-    def add(self, role: str, content: str, image_url: str = None):
+    def add(self, role: str, content: str, tool_call: dict = None, image_data: str = None):
         """Add a message to memory."""
-        if image_url:
-            content = [{"type": "text", "text": content}, {"type": "image_url", "image_url": {"url": image_url}}]
-        self.messages.append({"role": role, "content": content})
+        # Image
+        if image_data:
+            content = [
+                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_data}"}},
+                {"type": "text", "text": content},
+            ]
+        # Main message
+        message = {"role": role, "content": content}
+
+        # Tool call
+        if tool_call:
+            message["tool_calls"] = [tool_call]
+
+        # Append message to memory
+        self.messages.append(message)
 
     def get_messages(self) -> list[dict]:
         """Get all messages."""
@@ -107,5 +117,18 @@ what_we_built = ChapterOverview(
 )
 
 
-tinyagents_diff = DiffViewer(ch6_skills.TinyAgent, TinyAgent, "ch6.TinyAgent", "ch9.TinyAgent")
-memory_diff = DiffViewer(ch4.Memory, Memory, "ch4.Memory", "ch9.Memory")
+tinyagents_diff = DiffViewer(ch6_skills.TinyAgent, TinyAgent, "ch6_skills.TinyAgent", "ch9.TinyAgent")
+memory_diff = DiffViewer(ch5_native.Memory, Memory, "ch5_native.Memory", "ch9.Memory")
+
+
+what_we_built = ChapterOverview(
+    [
+        ("agent.py", "updated", "Allow the agent to process images in addition to text."),
+        ("llm.py", None, ""),
+        ("memory.py", "updated", "Track images in the conversation history for the Agent to access."),
+        ("planning.py", None, ""),
+        ("skills.py", None, ""),
+        ("toolbox.py", None, ""),
+        ("tools.py", None, ""),
+    ]
+)

@@ -1,154 +1,161 @@
-import re
+import json
+
+from typing import Callable
+
 from rich.console import Console
 from rich.rule import Rule
-from rich.syntax import Syntax
 
-from illustrated_agents import LLM, Memory, Tools, ReAct, Reflector, Skills
+
+from illustrated_agents.chapters.ch2 import Response
+from illustrated_agents.chapters.ch5_native import LLM, tool_to_schema
+from illustrated_agents.chapters.ch6_skills import Skills
+from illustrated_agents.chapters.ch6 import ReAct
+from illustrated_agents.chapters.ch9 import Memory
+
 from illustrated_agents.utils import CodeAnnotator, DiffViewer, ChapterOverview
-from illustrated_agents.chapters import ch9
+from illustrated_agents.chapters import ch5, ch9
 
 console = Console()
 
 
-class XMLReAct(ReAct):
-    """ReAct module."""
-
-    @property
-    def prompt(self) -> str:
-        return """
-# ReAct (Reason and Act)
-
-You are a ReAct agent that performs exactly ONE step per turn.
-Make sure to break down a given task into smaller steps and decide whether to use a tool or provide a final answer.
-
-## ReAct Format
-
-You use the following format for each step:
-
-THOUGHT: [Your reasoning about what to do next]
-ACTION: (see example below)
-
-An observation will be provided after each action. You do not generate the observation yourself.
-
-### Example
-
-THOUGHT: I need to search the web for the current weather in New York.
-ACTION:
-<tool>search_web</tool>
-<query>current weather in New York</query>
-<num_results>1</num_results>
-
-Each parameter gets its own XML tag matching the parameter name from the tool description.
-
-## ReAct Completion
-
-To provide the final answer to the task, use the `final_answer` tool like so:
-
-ACTION:
-<tool>final_answer</tool>
-<answer>insert your final answer here</answer>
-
-Use the `final_answer` tool when you are completely done with all subtasks and have the final answer ready.
-You can also use `final_answer` to directly reply to a user's question without using any tools if you think you can answer it directly.
-"""
-
-
-class XMLTools(Tools):
-    """Tool registry for the Agent with XML parsing and human-in-the-loop approval."""
+class Tools:
+    """Tool registry for the Agent."""
 
     def __init__(self, requires_approval: list[str] = []):
-        self.tools = {}
+        """Initialize Tools
+
+        Arguments:
+            requires_approval: A list of tool names that require human approval
+        """
+        self.registry = {}
         self.requires_approval = requires_approval
 
-    def run_tool(self, tool_call: dict) -> str:
-        """Run a tool, with human approval for dangerous tools."""
-        name, kwargs = tool_call["tool"], tool_call.get("kwargs", {})
+    def add_tool(self, name: str, func: Callable, description: str = ""):
+        """Register a tool that the Agent can use.
 
-        # Human-in-the-loop: ask before running dangerous tools
-        if name in self.requires_approval:
-            response = input(f"Allow {name}? [y/N] ").strip().lower()
-            if response not in ("y", "yes"):
-                return f"Tool '{name}' was denied by the user."
-
-        return super().run_tool(tool_call)
+        Arguments:
+            name: The name of the tool.
+            func: The function implementing the tool.
+            description: A description of the tool.
+        """
+        self.registry[name] = {"function": func, "description": description}
 
     @property
-    def prompt(self) -> str:
+    def descriptions(self):
+        """Get descriptions of all registered tools."""
+        return "\n".join(f"`{tool}`: {self.registry[tool]['description']}" for tool in self.registry)
+
+    @property
+    def prompt(self):
         return f"""
 # Tools
 
 If needed, you can only use the following tools to assist you in completing tasks:
 
 {self.descriptions}
-`final_answer`: Return the final answer to the user's query. Use this tool when you have the complete answer ready: final_answer(content: str)
+
+To use a tool, respond with JSON: {{"tool": "name", "kwargs": {{"param": "value"}}}}
 """
 
-    def has_tool_call(self, text: str) -> bool:
+    def has_tool_call(self, response: Response) -> bool:
         """Check whether there is a tool call in `text`."""
-        return "<tool>" in text
+        return '"tool":' in response.content or '"tool:"' in response.content
 
-    def parse_tool_call(self, text: str) -> dict:
-        """Parse an XML tool call from text."""
-        tool = re.search(r"<tool>(.*?)</tool>", text, re.DOTALL).group(1).strip()
-        kwargs = {}
-        for match in re.finditer(r"<(\w+)>(.*?)</\1>", text, re.DOTALL):
-            name, value = match.group(1), match.group(2).strip()
-            if name != "tool":
-                kwargs[name] = value
-        return {"tool": tool, "kwargs": kwargs}
+    def parse_tool_call(self, response: Response) -> dict:
+        """Parse a JSON tool call from text."""
+        text = response.content
+        start, end = text.find("{"), text.rfind("}") + 1
+        tool_call = json.loads(text[start:end])
+        return tool_call
+
+    def run_tool(self, tool_call: dict) -> any:
+        """Run a registered tool.
+
+        Arguments:
+            tool_call: A parsed tool call dict with "tool" and "kwargs" keys.
+        """
+        name, kwargs = tool_call["tool"], tool_call.get("kwargs", {})
+
+        # Human-in-the-loop: ask before running dangerous tools
+        if name in self.registry and name in self.requires_approval:
+            response = input(f"Allow {name}? [y/N] ").strip().lower()
+            if response not in ("y", "yes"):
+                return f"Tool '{name}' was denied by the user."
+
+        # Handle registered tools
+        if name in self.registry:
+            tool_func = self.registry[name]["function"]
+            return tool_func(**kwargs)
+
+        return f"Tool '{name}' not found."
+
+    @property
+    def schemas(self):
+        """Used only for native tool-calling."""
+        return None
+
+
+class NativeTools(Tools):
+    """Tool registry using native function calling."""
+
+    @property
+    def schemas(self) -> list:
+        """Return tool functions for native function calling."""
+        return [tool_to_schema(tool["function"]) for tool in self.registry.values()]
+
+    @property
+    def prompt(self) -> str:
+        """Empty because we don't need a prompt for native tool calling"""
+        return ""
+
+    def has_tool_call(self, response) -> bool:
+        """Check whether the tool call is not empty."""
+        return response.tool_call is not None
+
+    def parse_tool_call(self, response) -> dict:
+        """Parse a tool call."""
+        args = response.tool_call["function"]["arguments"]
+        if isinstance(args, str):
+            args = json.loads(args)
+        return {"tool": response.tool_call["function"]["name"], "kwargs": args}
 
 
 class Display:
-    """Formats agent events for the terminal."""
+    """Handles agent events with Rich formatting."""
 
-    def __call__(self, event, data=None):
+    def __call__(self, event: str, data: str | Response) -> None:
 
-        # Animate thinking
+        # Animate "thinking"
         if event == "thinking":
             console.print("  [dim]Thinking...[/]")
 
         # Print THOUGHT
         elif event == "response":
-            match = re.search(r"THOUGHT:\s*(.+?)(?=ACTION:|$)", data, re.IGNORECASE | re.DOTALL)
-            thought = match.group(1).strip() if match else data.strip()
-            console.print(f"  [bold dark_orange]{'THOUGHT':<13}[/][dim italic]{thought}[/]")
+            console.print(f"  [bold dark_orange]{'THOUGHT':<13}[/][dim italic]{data.reasoning}[/]")
 
         # Print ACTION
-        elif event == "tool_call" and data:
-            tool = data.get("tool")
-            kwargs = data.get("kwargs", {})
-            if tool != "final_answer":
-                if tool == "execute_python":
-                    console.print(f"  [bold yellow]{'ACTION':<13}[/][yellow]{tool}[/]")
-                    console.print(Syntax(kwargs.get("code", ""), "python", line_numbers=True))
-                else:
-                    args = ", ".join(f"{k}={v!r}" for k, v in kwargs.items())
-                    console.print(f"  [bold yellow]{'ACTION':<13}[/][yellow]{tool}({args})[/]")
+        elif event == "tool_call" and data.tool_call:
+            tool = data.tool_call.get("tool")
+            kwargs = data.tool_call.get("kwargs", {})
+            args_str = ", ".join(f"{k}={v!r}" for k, v in kwargs.items())
+            console.print(f"  [bold yellow]{'ACTION':<13}[/][yellow]{tool}({args_str})[/]")
 
         # Print OBSERVATION
         elif event == "observation":
             console.print(f"  [bold green]{'OBSERVATION':<13}[/]{data}")
-            console.print(Rule(style="dim"), end="\n")
+            console.print(Rule(style="dim"), end="\n\n")
 
 
 class TinyAgent:
     """A minimal, modular, and educational agent framework."""
 
     def __init__(
-        self,
-        llm: LLM,
-        memory: Memory,
-        tools: Tools,
-        planner: ReAct,
-        reflector: Reflector,
-        skills: Skills,
-        display=Display,
+        self, llm: LLM, memory: Memory, tools: Tools, planner: ReAct, skills: Skills, display=Display
     ):
         self.llm = llm
         self.memory = memory
         self.tools = tools
         self.planner = planner
-        self.reflector = reflector
         self.skills = skills
         self.display = display
 
@@ -159,17 +166,12 @@ class TinyAgent:
         system_prompt += self.skills.prompt
         self.memory.add("system", system_prompt)
 
-    def run(self, task: str, image_url: str = None) -> str:
+    def run(self, task: str, image_data: str = None) -> str:
         """Run the agent on a task."""
-        self.memory.add("user", task, image_url=image_url)
+        self.memory.add("user", task, image_data=image_data)
 
         # `Autonomy` loop
         for step in range(self.planner.max_steps):
-            # Reflection step before taking the next action
-            if self.reflector.should_reflect(step):
-                self.memory.add("user", self.reflector.prompt)
-
-            # Perform a step and check for completion
             result = self._step()
             if result is not None:
                 return result
@@ -180,9 +182,9 @@ class TinyAgent:
         """Perform a single step."""
         # Generate response and add to memory
         self.display("thinking")
-        response = self.llm.generate(self.memory.get_messages())
+        response = self.llm.generate(self.memory.get_messages(), tools=self.tools.schemas)
+        self.memory.add("assistant", response.content, tool_call=response.tool_call)
         self.display("response", response)
-        self.memory.add("assistant", response.content)
 
         # Parse planner's response to extract action if needed
         response = self.planner.parse(response)
@@ -191,32 +193,30 @@ class TinyAgent:
         if self.tools.has_tool_call(response):
             return self._execute_action(response)
 
-        self.memory.add("user", "OBSERVATION: No valid action found. Use the correct THOUGHT/ACTION format.")
+        # Stopping mechanism for native tool calling
+        if not response.tool_call:
+            return response.content
+
         return None
 
-    def _execute_action(self, action: str) -> str | None:
+    def _execute_action(self, response: Response) -> str | None:
         """Execute a tool action."""
-        try:
-            tool_call = self.tools.parse_tool_call(action)
-            self.display("tool_call", tool_call)
+        tool_call = self.tools.parse_tool_call(response)
+        self.display("tool_call", response)
 
-            # Final answer ends the loop
-            if tool_call["tool"] == "final_answer":
-                return tool_call["kwargs"]["answer"]
+        # Final answer ends the loop
+        if tool_call["tool"] == "final_answer":
+            return tool_call.get("kwargs", "")
 
-            # Activate skill and extract the observation
-            if tool_call["tool"] == "use_skill":
-                observation = self.skills.activate(tool_call)
+        # Execute tool and extract the observation
+        observation = self.tools.run_tool(tool_call)
 
-            # Execute tool and extract the observation
-            else:
-                observation = self.tools.run_tool(tool_call)
-        except Exception as e:
-            observation = f"Error: {e}"
-
-        # Format the observation and add it to memory
+        # Native tool calling should get the role `tool`
         self.display("observation", observation)
-        self.memory.add("user", f"OBSERVATION: {observation}")
+        if self.tools.schemas:
+            self.memory.add("tool", str(observation))
+        else:
+            self.memory.add("user", f"OBSERVATION: {observation}")
 
         return None
 
@@ -268,7 +268,7 @@ what_we_built = ChapterOverview(
         ),
         ("llm.py", None, ""),
         ("memory.py", None, ""),
-        ("planning.py", "updated", "Added XML-based instructions for tool calling."),
+        ("planning.py", None, ""),
         ("reflection.py", None, ""),
         ("skills.py", None, ""),
         ("toolbox.py", "updated", "Added tools for Coding Agents."),
@@ -278,24 +278,12 @@ what_we_built = ChapterOverview(
 
 
 tinyagents_diff = DiffViewer(ch9.TinyAgent, TinyAgent, "ch9.TinyAgent", "ch11.TinyAgent")
-react_diff = DiffViewer(ReAct.prompt, XMLReAct.prompt, "ReAct", "XMLReAct")
-tools_diff = DiffViewer(Tools.prompt, XMLTools.prompt, "Tools", "XMLTools")
-
+tool_diff = DiffViewer(ch5.Tools, Tools, "ch5.Tools", "ch11.Tools")
 
 tools_annotated = CodeAnnotator(
-    XMLTools,
+    Tools.run_tool,
     annotations={
-        6: "Accept a list of tool names that require human approval before execution.",
-        (
-            13,
-            16,
-        ): "Human-in-the-loop: prompt the user with <code>input()</code> before running dangerous tools. If denied, return a message instead.",
-        32: "We now search for <code>&lt;tool&gt;</code> tags instead of JSON tool calls.",
-        36: "Since there will be only a single tool call per response, we can simplify the parsing logic to just look for the first <code>&lt;tool&gt;</code> tag.",
-        (
-            38,
-            42,
-        ): "There might be multiple keyword arguments (kwargs) in the tool call that need to be extracted.",
+        (9, 13): "When running a tool, if it requires human approval, ask the user before executing it.",
     },
 )
 
@@ -304,9 +292,8 @@ display_annotated = CodeAnnotator(
     Display.__call__,
     annotations={
         5: "When the LLM starts generating, show `Thinking...` so the user knows the agent is processing.",
-        (9, 11): "When a response arrives, stop the spinner and display the extracted <b>THOUGHT</b>.",
-        14: "Print intermediate answers as an <b>ACTION</b> and continue the loop.",
-        (17, 18): "Format tool calls as <b>ACTION</b>.",
-        (22, 24): "Display the <b>OBSERVATION</b> returned by the tool.",
+        9: "When a response arrives, stop the spinner and display the extracted <b>THOUGHT</b>.",
+        16: "Print intermediate answers as an <b>ACTION</b> and continue the loop.",
+        20: "Display the <b>OBSERVATION</b> returned by the tool.",
     },
 )

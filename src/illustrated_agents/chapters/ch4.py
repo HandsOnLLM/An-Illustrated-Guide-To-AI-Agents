@@ -26,7 +26,6 @@ class TinyAgent:
         self.memory = memory
         self.tools = None  # Chapter 5: Add Tools
         self.planner = None  # Chapter 6: Add Planning
-        self.reflector = None  # Chapter 6: Add Reflection
         self.skills = None  # Chapter 6: Add Skills
 
     def run(self, task: str) -> str:

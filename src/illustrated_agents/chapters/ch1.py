@@ -9,7 +9,6 @@ class TinyAgent:
         self.memory = None  # Chapter 4: Add Memory
         self.tools = None  # Chapter 5: Add Tools
         self.planner = None  # Chapter 6: Add Planning
-        self.reflector = None  # Chapter 6: Add Reflection
         self.skills = None  # Chapter 6: Add Skills
 
     def run(self, task: str) -> str:
@@ -37,7 +36,10 @@ what_we_built = ChapterOverview(
 agent_annotated = CodeAnnotator(
     TinyAgent,
     annotations={
-        (12, 14): "In the `run` method, we run the `TinyAgent` on a given task in either a single `_step` or multiple `_step`s.",
+        (
+            12,
+            14,
+        ): "In the `run` method, we run the `TinyAgent` on a given task in either a single `_step` or multiple `_step`s.",
         (16, 19): "A single step typically consists of processing the input and generating a response.",
         (21, 24): """
 The `_execute_action` method is a placeholder for executing tool actions (like calling external APIs or performing calculations), 
