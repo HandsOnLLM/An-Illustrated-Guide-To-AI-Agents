@@ -139,7 +139,7 @@ def _build_code_tools(workspace: str = ".") -> dict:
 
 def create_native_code_tools(workspace: str = ".") -> NativeTools:
     """Create coding tools with native function calling (schemas auto-generated)."""
-    tools = NativeTools()
+    tools = NativeTools(requires_approval={"execute_python", "write_file"})
     for name, (func, desc) in _build_code_tools(workspace).items():
         tools.add_tool(name, func, desc)
     return tools

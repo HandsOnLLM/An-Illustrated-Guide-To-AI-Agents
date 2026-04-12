@@ -165,8 +165,8 @@ class Display:
 
         # Print ACTION
         elif event == "tool_call" and data:
-            tool = data.tool_call["function"]["name"]
-            kwargs = data.tool_call["function"]["arguments"]
+            tool = data.tool_call["tool"]
+            kwargs = data.tool_call["kwargs"]
             console.print(f"  {label('ACTION', 'yellow')}[yellow]{tool}({kwargs})[/]")
 
         # Print OBSERVATION

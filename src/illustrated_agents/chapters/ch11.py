@@ -13,7 +13,8 @@ from illustrated_agents.chapters.ch6 import ReAct
 from illustrated_agents.chapters.ch9 import Memory
 
 from illustrated_agents.utils import CodeAnnotator, DiffViewer, ChapterOverview
-from illustrated_agents.chapters import ch5, ch9
+from illustrated_agents.chapters import ch6, ch9
+
 
 console = Console()
 
@@ -41,12 +42,12 @@ class Tools:
         self.registry[name] = {"function": func, "description": description}
 
     @property
-    def descriptions(self):
+    def descriptions(self) -> str:
         """Get descriptions of all registered tools."""
         return "\n".join(f"`{tool}`: {self.registry[tool]['description']}" for tool in self.registry)
 
     @property
-    def prompt(self):
+    def prompt(self) -> str:
         return f"""
 # Tools
 
@@ -57,23 +58,30 @@ If needed, you can only use the following tools to assist you in completing task
 To use a tool, respond with JSON: {{"tool": "name", "kwargs": {{"param": "value"}}}}
 """
 
-    def has_tool_call(self, response: Response) -> bool:
-        """Check whether there is a tool call in `text`."""
-        return '"tool":' in response.content or '"tool:"' in response.content
-
-    def parse_tool_call(self, response: Response) -> dict:
+    def parse(self, response: Response) -> Response:
         """Parse a JSON tool call from text."""
         text = response.content
-        start, end = text.find("{"), text.rfind("}") + 1
-        tool_call = json.loads(text[start:end])
-        return tool_call
 
-    def run_tool(self, tool_call: dict) -> any:
+        if '"tool":' in text or '"tool:"' in text:
+            start, end = text.find("{"), text.rfind("}") + 1
+            tool_call = json.loads(text[start:end])
+
+            # Add the parsed tool call to the response
+            return Response(
+                content=response.content,
+                reasoning=response.reasoning,
+                tool_call=tool_call,
+            )
+
+        return response
+
+    def execute(self, response: Response) -> any:
         """Run a registered tool.
 
         Arguments:
             tool_call: A parsed tool call dict with "tool" and "kwargs" keys.
         """
+        tool_call = response.tool_call
         name, kwargs = tool_call["tool"], tool_call.get("kwargs", {})
 
         # Human-in-the-loop: ask before running dangerous tools
@@ -88,6 +96,17 @@ To use a tool, respond with JSON: {{"tool": "name", "kwargs": {{"param": "value"
             return tool_func(**kwargs)
 
         return f"Tool '{name}' not found."
+
+    def observation(self, result):
+        """Return the observation as a user."""
+        return "user", f"OBSERVATION: {result}"
+
+    def is_done(self, response: Response) -> bool:
+        """The `TinyAgent` is done when it uses the `final_answer` tool."""
+        if response.tool_call and response.tool_call["tool"] == "final_answer":
+            response.content = response.tool_call.get("kwargs", "")
+            return True
+        return False
 
     @property
     def schemas(self):
@@ -123,8 +142,7 @@ class NativeTools(Tools):
 class Display:
     """Handles agent events with Rich formatting."""
 
-    def __call__(self, event: str, data: str | Response) -> None:
-
+    def __call__(self, event: str, data: str | Response = None) -> None:
         # Animate "thinking"
         if event == "thinking":
             console.print("  [dim]Thinking...[/]")
@@ -133,12 +151,14 @@ class Display:
         elif event == "response":
             console.print(f"  [bold dark_orange]{'THOUGHT':<13}[/][dim italic]{data.reasoning}[/]")
 
+            if data.content:
+                console.print(f"  [bold cyan]{'ANSWER':<13}[/][dim italic]{data.content}[/]")
+
         # Print ACTION
         elif event == "tool_call" and data.tool_call:
-            tool = data.tool_call.get("tool")
-            kwargs = data.tool_call.get("kwargs", {})
-            args_str = ", ".join(f"{k}={v!r}" for k, v in kwargs.items())
-            console.print(f"  [bold yellow]{'ACTION':<13}[/][yellow]{tool}({args_str})[/]")
+            tool = data.tool_call["tool"]
+            kwargs = data.tool_call["kwargs"]
+            console.print(f"  [bold yellow]{'ACTION':<13}[/][yellow]{tool}({kwargs})[/]")
 
         # Print OBSERVATION
         elif event == "observation":
@@ -160,10 +180,10 @@ class TinyAgent:
         self.display = display
 
         # Build system prompt with all components
-        system_prompt = "You are a helpful AI agent.\n\n"
-        system_prompt += self.planner.prompt + "\n\n"
-        system_prompt += self.tools.prompt
-        system_prompt += self.skills.prompt
+        system_prompt = "You are a helpful assistant.\n"
+        system_prompt += self.planner.prompt + "\n"
+        system_prompt += self.tools.prompt + "\n"
+        system_prompt += self.skills.prompt + "\n"
         self.memory.add("system", system_prompt)
 
     def run(self, task: str, image_data: str = None) -> str:
@@ -178,45 +198,33 @@ class TinyAgent:
 
         return "Max steps reached without completion."
 
-    def _step(self) -> str | None:
+    def _step(self) -> str:
         """Perform a single step."""
-        # Generate response and add to memory
-        self.display("thinking")
+        # THOUGHT: Generate response and add to memory
         response = self.llm.generate(self.memory.get_messages(), tools=self.tools.schemas)
         self.memory.add("assistant", response.content, tool_call=response.tool_call)
         self.display("response", response)
 
-        # Parse planner's response to extract action if needed
-        response = self.planner.parse(response)
+        # Tool parsing
+        response = self.tools.parse(response)
 
-        # Tool parsing and execution
-        if self.tools.has_tool_call(response):
-            return self._execute_action(response)
-
-        # Stopping mechanism for native tool calling
-        if not response.tool_call:
+        # ANSWER: Stopping mechanism
+        if self.tools.is_done(response):
             return response.content
 
-        return None
+        return self._execute_action(response)
 
-    def _execute_action(self, response: Response) -> str | None:
+    def _execute_action(self, response: Response) -> None:
         """Execute a tool action."""
-        tool_call = self.tools.parse_tool_call(response)
+
+        # ACTION: execute tools
         self.display("tool_call", response)
+        result = self.tools.execute(response)
 
-        # Final answer ends the loop
-        if tool_call["tool"] == "final_answer":
-            return tool_call.get("kwargs", "")
-
-        # Execute tool and extract the observation
-        observation = self.tools.run_tool(tool_call)
-
-        # Native tool calling should get the role `tool`
+        # OBSERVATION: add tool results to memory and display
+        role, observation = self.tools.observation(result)
+        self.memory.add(role, observation)
         self.display("observation", observation)
-        if self.tools.schemas:
-            self.memory.add("tool", str(observation))
-        else:
-            self.memory.add("user", f"OBSERVATION: {observation}")
 
         return None
 
@@ -278,12 +286,12 @@ what_we_built = ChapterOverview(
 
 
 tinyagents_diff = DiffViewer(ch9.TinyAgent, TinyAgent, "ch9.TinyAgent", "ch11.TinyAgent")
-tool_diff = DiffViewer(ch5.Tools, Tools, "ch5.Tools", "ch11.Tools")
+tool_diff = DiffViewer(ch6.Tools, Tools, "ch6.Tools", "ch11.Tools")
 
 tools_annotated = CodeAnnotator(
-    Tools.run_tool,
+    Tools.execute,
     annotations={
-        (9, 13): "When running a tool, if it requires human approval, ask the user before executing it.",
+        (11, 14): "When running a tool, if it requires human approval, ask the user before executing it.",
     },
 )
 
@@ -291,9 +299,9 @@ tools_annotated = CodeAnnotator(
 display_annotated = CodeAnnotator(
     Display.__call__,
     annotations={
-        5: "When the LLM starts generating, show `Thinking...` so the user knows the agent is processing.",
-        9: "When a response arrives, stop the spinner and display the extracted <b>THOUGHT</b>.",
-        16: "Print intermediate answers as an <b>ACTION</b> and continue the loop.",
-        20: "Display the <b>OBSERVATION</b> returned by the tool.",
+        4: "When the LLM starts generating, show `Thinking...` so the user knows the agent is processing.",
+        8: "When a response arrives, stop the spinner and display the extracted <b>THOUGHT</b>.",
+        17: "Print intermediate answers as an <b>ACTION</b> and continue the loop.",
+        21: "Display the <b>OBSERVATION</b> returned by the tool.",
     },
 )

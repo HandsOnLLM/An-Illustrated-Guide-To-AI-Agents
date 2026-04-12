@@ -4,7 +4,7 @@ import litellm
 import ollama
 from openai import OpenAI
 
-from illustrated_agents.utils import CodeAnnotator, ChapterOverview, DiffViewer
+from illustrated_agents.utils import ChapterOverview, DiffViewer
 from illustrated_agents.chapters.ch2 import Response, Backend
 from illustrated_agents.chapters.ch5 import Tools
 from illustrated_agents.chapters import ch2, ch5
@@ -182,16 +182,32 @@ class NativeTools(Tools):
         """Empty because we don't need a prompt for native tool calling"""
         return ""
 
-    def has_tool_call(self, response) -> bool:
-        """Check whether the tool call is not empty."""
-        return response.tool_call is not None
-
-    def parse_tool_call(self, response) -> dict:
+    def parse(self, response: Response) -> Response:
         """Parse a tool call."""
+        # If there's no tool call, return the response as is
+        if not response.tool_call:
+            return response
+
+        # Extract the tool name and arguments from the tool call
         args = response.tool_call["function"]["arguments"]
         if isinstance(args, str):
             args = json.loads(args)
-        return {"tool": response.tool_call["function"]["name"], "kwargs": args}
+        tool_call = {"tool": response.tool_call["function"]["name"], "kwargs": args}
+
+        # Add the parsed tool call to the response
+        return Response(
+            content=response.content,
+            reasoning=response.reasoning,
+            tool_call=tool_call,
+        )
+
+    def observation(self, result):
+        """Native tool results use the 'tool' role."""
+        return "tool", str(result)
+
+    def is_done(self, response: Response) -> bool:
+        """No tool call means the `TinyAgent` is done."""
+        return not response.tool_call
 
 
 class TinyAgent:
@@ -217,31 +233,30 @@ class TinyAgent:
 
     def _step(self) -> str:
         """Perform a single step."""
-        # Generate response and add to memory
+        # THOUGHT: Generate response and add to memory
         response = self.llm.generate(self.memory.get_messages(), tools=self.tools.schemas)
         self.memory.add("assistant", response.content, tool_call=response.tool_call)
 
-        # Tool parsing and execution
-        if self.tools.has_tool_call(response):
-            return self._execute_action(response)
+        # Tool parsing
+        response = self.tools.parse(response)
 
-        return response.content
+        # ANSWER: Stopping mechanism
+        if self.tools.is_done(response):
+            return response.content
 
-    def _execute_action(self, response: Response) -> str | None:
+        return self._execute_action(response)
+
+    def _execute_action(self, response: Response) -> None:
         """Execute a tool action."""
-        tool_call = self.tools.parse_tool_call(response)
 
-        # Execute tool and extract the observation
-        observation = self.tools.run_tool(tool_call)
-        obs_prompt = f"OBSERVATION: {response.content} -> {observation}"
+        # ACTION: execute tools
+        result = self.tools.execute(response)
 
-        # Native tool calling should get the role `tool`
-        if self.tools.schemas:
-            self.memory.add("tool", str(observation))
-        else:
-            self.memory.add("user", f"OBSERVATION: {observation}")
+        # OBSERVATION: add tool results to memory and display
+        role, observation = self.tools.observation(result)
+        self.memory.add(role, observation)
 
-        return observation if self.tools.schemas else obs_prompt
+        return observation
 
 
 what_we_built = ChapterOverview(
@@ -268,22 +283,22 @@ what_we_built = ChapterOverview(
 )
 
 
-add_nativetool_annotated = CodeAnnotator(
-    Tools.has_tool_call,
-    annotations={
-        3: """We check whether there is a tool call by seeing if `"tool":` appears in the text. If it does, we think there is a tool call. """
-    },
-)
+# add_nativetool_annotated = CodeAnnotator(
+#     NativeTools.has_tool_call,
+#     annotations={
+#         3: """We check whether there is a tool call by seeing if `"tool":` appears in the text. If it does, we think there is a tool call. """
+#     },
+# )
 
-parse_tool_annotated = CodeAnnotator(
-    Tools.parse_tool_call,
-    annotations={3: "We expect a simple JSON string and only need to extract within {} brackets."},
-)
+# parse_tool_annotated = CodeAnnotator(
+#     NativeTools.parse_tool_call,
+#     annotations={3: "We expect a simple JSON string and only need to extract within {} brackets."},
+# )
 
-run_tool_annotated = CodeAnnotator(
-    Tools.run_tool,
-    annotations={
-        7: "The tool name and possible arguments are extracted from the parsed tool call.",
-        (11, 12): "Tools are looked up in the registry and executed with the provided arguments.",
-    },
-)
+# run_tool_annotated = CodeAnnotator(
+#     NativeTools.run_tool,
+#     annotations={
+#         7: "The tool name and possible arguments are extracted from the parsed tool call.",
+#         (11, 12): "Tools are looked up in the registry and executed with the provided arguments.",
+#     },
+# )

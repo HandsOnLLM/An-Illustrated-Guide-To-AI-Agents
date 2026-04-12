@@ -40,7 +40,7 @@ class TinyAgent:
 
     def _step(self) -> str | None:
         """Perform a single step."""
-        # Generate response and add to memory
+        # THOUGHT: generate reasoning and potential action
         self.display("thinking")
         response = self.llm.generate(self.memory.get_messages(), tools=self.tools.schemas)
         self.memory.add("assistant", response.content, tool_call=response.tool_call)
@@ -49,33 +49,24 @@ class TinyAgent:
         # Parse planner's response to extract action if needed
         response = self.planner.parse(response)
 
-        # Tool parsing and execution
-        if self.tools.has_tool_call(response):
-            return self._execute_action(response)
+        # Tool parsing
+        response = self.tools.parse(response)
 
-        # Stopping mechanism for native tool calling
-        if not response.tool_call:
+        # Stopping mechanism
+        if self.tools.is_done(response):
             return response.content
 
-        return None
+        return self._execute_action(response)
 
-    def _execute_action(self, response: Response) -> str | None:
+    def _execute_action(self, response: Response) -> None:
         """Execute a tool action."""
-        tool_call = self.tools.parse_tool_call(response)
+        # ACTION: execute tools
         self.display("tool_call", response)
+        result = self.tools.execute(response)
 
-        # Final answer ends the loop
-        if tool_call["tool"] == "final_answer":
-            return tool_call.get("kwargs", "")
-
-        # Execute tool and extract the observation
-        observation = self.tools.run_tool(tool_call)
-
-        # Native tool calling should get the role `tool`
+        # OBSERVATION: add tool results to memory and display
+        role, observation = self.tools.observation(result)
+        self.memory.add(role, observation)
         self.display("observation", observation)
-        if self.tools.schemas:
-            self.memory.add("tool", str(observation))
-        else:
-            self.memory.add("user", f"OBSERVATION: {observation}")
 
         return None

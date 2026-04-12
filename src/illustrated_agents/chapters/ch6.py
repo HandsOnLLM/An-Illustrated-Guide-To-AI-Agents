@@ -1,9 +1,93 @@
 import re
-
+import json
+from typing import Callable
 from illustrated_agents.chapters import ch5
 from illustrated_agents.chapters.ch2 import Response
-from illustrated_agents.chapters.ch5_native import Tools, LLM, Memory
+from illustrated_agents.chapters.ch5_native import LLM, Memory
 from illustrated_agents.utils import DiffViewer, CodeAnnotator, ChapterOverview
+
+
+class Tools:
+    """Tool registry for the Agent."""
+
+    def __init__(self):
+        self.registry = {}
+
+    def add_tool(self, name: str, func: Callable, description: str = ""):
+        """Register a tool that the Agent can use.
+
+        Arguments:
+            name: The name of the tool.
+            func: The function implementing the tool.
+            description: A description of the tool.
+        """
+        self.registry[name] = {"function": func, "description": description}
+
+    @property
+    def descriptions(self) -> str:
+        """Get descriptions of all registered tools."""
+        return "\n".join(f"`{tool}`: {self.registry[tool]['description']}" for tool in self.registry)
+
+    @property
+    def prompt(self) -> str:
+        return f"""
+# Tools
+
+If needed, you can only use the following tools to assist you in completing tasks:
+
+{self.descriptions}
+
+To use a tool, respond with JSON: {{"tool": "name", "kwargs": {{"param": "value"}}}}
+"""
+
+    def parse(self, response: Response) -> Response:
+        """Parse a JSON tool call from text."""
+        text = response.content
+
+        if '"tool":' in text or '"tool:"' in text:
+            start, end = text.find("{"), text.rfind("}") + 1
+            tool_call = json.loads(text[start:end])
+
+            # Add the parsed tool call to the response
+            return Response(
+                content=response.content,
+                reasoning=response.reasoning,
+                tool_call=tool_call,
+            )
+
+        return response
+
+    def execute(self, response: Response) -> any:
+        """Run a registered tool.
+
+        Arguments:
+            tool_call: A parsed tool call dict with "tool" and "kwargs" keys.
+        """
+        tool_call = response.tool_call
+        name, kwargs = tool_call["tool"], tool_call.get("kwargs", {})
+
+        # Handle registered tools
+        if name in self.registry:
+            tool_func = self.registry[name]["function"]
+            return tool_func(**kwargs)
+
+        return f"Tool '{name}' not found."
+
+    def observation(self, result):
+        """Return the observation as a user."""
+        return "user", f"OBSERVATION: {result}"
+
+    def is_done(self, response: Response) -> bool:
+        """The `TinyAgent` is done when it uses the `final_answer` tool."""
+        if response.tool_call and response.tool_call["tool"] == "final_answer":
+            response.content = response.tool_call.get("kwargs", "")
+            return True
+        return False
+
+    @property
+    def schemas(self):
+        """Used only for native tool-calling."""
+        return None
 
 
 class ReAct:
@@ -86,8 +170,8 @@ class TinyAgent:
         self.skills = None  # Chapter 6: Add Skills
 
         # Build system prompt with all components
-        system_prompt = "You are a helpful AI agent.\n\n"
-        system_prompt += self.planner.prompt + "\n\n"
+        system_prompt = "You are a helpful assistant.\n"
+        system_prompt += self.planner.prompt + "\n"
         system_prompt += self.tools.prompt
         self.memory.add("system", system_prompt)
 
@@ -103,37 +187,30 @@ class TinyAgent:
 
         return "Max steps reached without completion."
 
-    def _step(self) -> str | None:
+    def _step(self) -> str:
         """Perform a single step."""
-        # Generate response and add to memory
+        # THOUGHT: Generate response and add to memory
         response = self.llm.generate(self.memory.get_messages(), tools=self.tools.schemas)
         self.memory.add("assistant", response.content, tool_call=response.tool_call)
 
-        # Parse planner's response to extract action if needed
-        response = self.planner.parse(response)
+        # Tool parsing
+        response = self.tools.parse(response)
 
-        # Tool parsing and execution
-        if self.tools.has_tool_call(response):
-            return self._execute_action(response)
+        # ANSWER: Stopping mechanism
+        if self.tools.is_done(response):
+            return response.content
 
-        return None
+        return self._execute_action(response)
 
-    def _execute_action(self, response: Response) -> str | None:
+    def _execute_action(self, response: Response) -> None:
         """Execute a tool action."""
-        tool_call = self.tools.parse_tool_call(response)
 
-        # Final answer ends the loop
-        if tool_call["tool"] == "final_answer":
-            return tool_call.get("kwargs", "")
+        # ACTION: execute tools
+        result = self.tools.execute(response)
 
-        # Execute tool and extract the observation
-        observation = self.tools.run_tool(tool_call)
-
-        # Native tool calling should get the role `tool`
-        if self.tools.schemas:
-            self.memory.add("tool", str(observation))
-        else:
-            self.memory.add("user", f"OBSERVATION: {observation}")
+        # OBSERVATION: add tool results to memory and display
+        role, observation = self.tools.observation(result)
+        self.memory.add(role, observation)
 
         return None
 
@@ -180,8 +257,8 @@ tinyagent_init_annotated = CodeAnnotator(
     TinyAgent.__init__,
     annotations={
         (
+            10,
             11,
-            12,
         ): "We added the prompt of the ReAct module to the system prompt and follow it up with the tools prompt.",
     },
 )
@@ -202,18 +279,21 @@ tinyagent_step_annotated = CodeAnnotator(
     annotations={
         (4, 5): "A response is generated and added to memory.",
         8: "The output needs to be parsed into THOUGHT and ACTION using the ReAct parser. That way, we end with a `parsed` dict containing those two elements.",
-        (11, 12): "If the ACTION contains a tool call, we execute it using the `_execute_action` method.",
+        (
+            11,
+            12,
+        ): "We check if the ACTION contains a tool call that signals completion (final_answer). If so, we return the final answer and end the loop.",
+        14: "If the ACTION contains a tool call, execute it.",
     },
 )
 
 tinyagent_action_annotated = CodeAnnotator(
     TinyAgent._execute_action,
     annotations={
-        3: "The JSON string representing the tool call is parsed into a dictionary using the Tools module.",
-        (6, 7): "If the tool is 'final_answer', we return the final answer and end the loop.",
+        5: "The tool call is executed using the `Tools` class which looks up the tool in the registry and calls it.",
         (
-            10,
-            12,
-        ): "If it's a regular tool, we execute it and add the observation to memory. We do not return anything, so the loop can continue.",
+            8,
+            9,
+        ): "The result of the tool execution is stored as an observation in memory. This way, the LLM can reference the observation in the next step.",
     },
 )

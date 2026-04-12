@@ -25,12 +25,12 @@ class Tools:
         self.registry[name] = {"function": func, "description": description}
 
     @property
-    def descriptions(self):
+    def descriptions(self) -> str:
         """Get descriptions of all registered tools."""
         return "\n".join(f"`{tool}`: {self.registry[tool]['description']}" for tool in self.registry)
 
     @property
-    def prompt(self):
+    def prompt(self) -> str:
         return f"""
 # Tools
 
@@ -41,23 +41,30 @@ If needed, you can only use the following tools to assist you in completing task
 To use a tool, respond with JSON: {{"tool": "name", "kwargs": {{"param": "value"}}}}
 """
 
-    def has_tool_call(self, response: Response) -> bool:
-        """Check whether there is a tool call in `text`."""
-        return '"tool":' in response.content or '"tool:"' in response.content
-
-    def parse_tool_call(self, response: Response) -> dict:
+    def parse(self, response: Response) -> Response:
         """Parse a JSON tool call from text."""
         text = response.content
-        start, end = text.find("{"), text.rfind("}") + 1
-        tool_call = json.loads(text[start:end])
-        return tool_call
 
-    def run_tool(self, tool_call: dict) -> any:
+        if '"tool":' in text or '"tool:"' in text:
+            start, end = text.find("{"), text.rfind("}") + 1
+            tool_call = json.loads(text[start:end])
+
+            # Add the parsed tool call to the response
+            return Response(
+                content=response.content,
+                reasoning=response.reasoning,
+                tool_call=tool_call,
+            )
+
+        return response
+
+    def execute(self, response: Response) -> any:
         """Run a registered tool.
 
         Arguments:
             tool_call: A parsed tool call dict with "tool" and "kwargs" keys.
         """
+        tool_call = response.tool_call
         name, kwargs = tool_call["tool"], tool_call.get("kwargs", {})
 
         # Handle registered tools
@@ -66,6 +73,14 @@ To use a tool, respond with JSON: {{"tool": "name", "kwargs": {{"param": "value"
             return tool_func(**kwargs)
 
         return f"Tool '{name}' not found."
+
+    def observation(self, result):
+        """Return the observation as a user."""
+        return "user", f"OBSERVATION: {result}"
+
+    def is_done(self, response: Response) -> bool:
+        """The `TinyAgent` is done if there is no tool call."""
+        return not response.tool_call
 
     @property
     def schemas(self):
@@ -96,26 +111,30 @@ class TinyAgent:
 
     def _step(self) -> str:
         """Perform a single step."""
-        # Generate response and add to memory
+        # THOUGHT: Generate response and add to memory
         response = self.llm.generate(self.memory.get_messages())
         self.memory.add("assistant", response.content)
 
-        # Tool parsing and execution
-        if self.tools.has_tool_call(response):
-            return self._execute_action(response)
+        # Tool parsing
+        response = self.tools.parse(response)
 
-        return response.content
+        # ANSWER: Stopping mechanism
+        if self.tools.is_done(response):
+            return response.content
 
-    def _execute_action(self, response: Response) -> str | None:
+        return self._execute_action(response)
+
+    def _execute_action(self, response: Response) -> None:
         """Execute a tool action."""
-        tool_call = self.tools.parse_tool_call(response)
 
-        # Execute tool and extract the observation
-        observation = self.tools.run_tool(tool_call)
-        obs_prompt = f"OBSERVATION: {response.content} -> {observation}"
-        self.memory.add("user", obs_prompt)
+        # ACTION: execute tools
+        result = self.tools.execute(response)
 
-        return obs_prompt
+        # OBSERVATION: add tool results to memory and display
+        role, observation = self.tools.observation(result)
+        self.memory.add(role, observation)
+
+        return observation
 
 
 what_we_built = ChapterOverview(
@@ -171,25 +190,39 @@ agent_execute_action_annotated = CodeAnnotator(
 )
 
 
-add_tool_annotated = CodeAnnotator(
-    Tools.has_tool_call,
-    annotations={
-        3: """We check whether there is a tool call by seeing if `"tool":` appears in the text. If it does, we think there is a tool call. """
-    },
-)
-
 parse_tool_annotated = CodeAnnotator(
-    Tools.parse_tool_call,
-    annotations={3: "We expect a simple JSON string and only need to extract within {} brackets."},
-)
-
-run_tool_annotated = CodeAnnotator(
-    Tools.run_tool,
+    Tools.parse,
     annotations={
-        7: "The tool name and possible arguments are extracted from the parsed tool call.",
-        (11, 12): "Tools are looked up in the registry and executed with the provided arguments.",
+        6: "We expect a simple JSON string and only need to extract within {} brackets.",
+        (10, 14): "The parsed tool call is added to the `Response` object for later use in execution.",
+        16: "If no tool call is found, the original response is returned.",
     },
 )
+
+execute_tool_annotated = CodeAnnotator(
+    Tools.execute,
+    annotations={
+        (7, 8): "The tool name and possible arguments are extracted from the parsed tool call.",
+        (12, 13): "Tools are looked up in the registry and executed with the provided arguments.",
+        15: "If the tool is not found, an error message is returned which can be saved in the Agent's memory as feedback.",
+        16: "",
+    },
+)
+
+observation_tool_annotated = CodeAnnotator(
+    Tools.observation,
+    annotations={
+        3: "The observation is returned as a user message. This way, the result of the tool execution can be processed by the LLM in the next step.",
+    },
+)
+
+done_tool_annotated = CodeAnnotator(
+    Tools.is_done,
+    annotations={
+        3: "A simple stopping mechanism is implemented where the agent is considered done if there is no tool call in the response.",
+    },
+)
+
 
 run_mcp_tool_annotated = CodeAnnotator(
     MCPTools,

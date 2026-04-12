@@ -65,12 +65,12 @@ class Tools:
         self.registry[name] = {"function": func, "description": description}
 
     @property
-    def descriptions(self):
+    def descriptions(self) -> str:
         """Get descriptions of all registered tools."""
         return "\n".join(f"`{tool}`: {self.registry[tool]['description']}" for tool in self.registry)
 
     @property
-    def prompt(self):
+    def prompt(self) -> str:
         return f"""
 # Tools
 
@@ -81,23 +81,30 @@ If needed, you can only use the following tools to assist you in completing task
 To use a tool, respond with JSON: {{"tool": "name", "kwargs": {{"param": "value"}}}}
 """
 
-    def has_tool_call(self, response: Response) -> bool:
-        """Check whether there is a tool call in `text`."""
-        return '"tool":' in response.content or '"tool:"' in response.content
-
-    def parse_tool_call(self, response: Response) -> dict:
+    def parse(self, response: Response) -> Response:
         """Parse a JSON tool call from text."""
         text = response.content
-        start, end = text.find("{"), text.rfind("}") + 1
-        tool_call = json.loads(text[start:end])
-        return tool_call
 
-    def run_tool(self, tool_call: dict) -> any:
+        if '"tool":' in text or '"tool:"' in text:
+            start, end = text.find("{"), text.rfind("}") + 1
+            tool_call = json.loads(text[start:end])
+
+            # Add the parsed tool call to the response
+            return Response(
+                content=response.content,
+                reasoning=response.reasoning,
+                tool_call=tool_call,
+            )
+
+        return response
+
+    def execute(self, response: Response) -> any:
         """Run a registered tool.
 
         Arguments:
             tool_call: A parsed tool call dict with "tool" and "kwargs" keys.
         """
+        tool_call = response.tool_call
         name, kwargs = tool_call["tool"], tool_call.get("kwargs", {})
 
         # Human-in-the-loop: ask before running dangerous tools
@@ -112,6 +119,17 @@ To use a tool, respond with JSON: {{"tool": "name", "kwargs": {{"param": "value"
             return tool_func(**kwargs)
 
         return f"Tool '{name}' not found."
+
+    def is_done(self, response: Response) -> bool:
+        """The `TinyAgent` is done when it uses the `final_answer` tool."""
+        if response.tool_call and response.tool_call["tool"] == "final_answer":
+            response.content = response.tool_call.get("kwargs", "")
+            return True
+        return False
+
+    def observation(self, result):
+        """Return the observation as a user."""
+        return "user", f"OBSERVATION: {result}"
 
     @property
     def schemas(self):
@@ -180,13 +198,29 @@ class NativeTools(Tools):
         """Empty because we don't need a prompt for native tool calling"""
         return ""
 
-    def has_tool_call(self, response) -> bool:
-        """Check whether the tool call is not empty."""
-        return response.tool_call is not None
-
-    def parse_tool_call(self, response) -> dict:
+    def parse(self, response: Response) -> Response:
         """Parse a tool call."""
+        # If there's no tool call, return the response as is
+        if not response.tool_call:
+            return response
+
+        # Extract the tool name and arguments from the tool call
         args = response.tool_call["function"]["arguments"]
         if isinstance(args, str):
             args = json.loads(args)
-        return {"tool": response.tool_call["function"]["name"], "kwargs": args}
+        tool_call = {"tool": response.tool_call["function"]["name"], "kwargs": args}
+
+        # Add the parsed tool call to the response
+        return Response(
+            content=response.content,
+            reasoning=response.reasoning,
+            tool_call=tool_call,
+        )
+
+    def observation(self, result):
+        """Native tool results use the 'tool' role."""
+        return "tool", str(result)
+
+    def is_done(self, response: Response) -> bool:
+        """No tool call means the `TinyAgent` is done."""
+        return not response.tool_call
