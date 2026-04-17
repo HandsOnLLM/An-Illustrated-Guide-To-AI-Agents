@@ -1,16 +1,9 @@
 from openai import OpenAI
 
-from enum import StrEnum
 from dataclasses import dataclass
 
 from illustrated_agents.utils import CodeAnnotator, DiffViewer, ChapterOverview
 from illustrated_agents.chapters import ch1
-
-
-class Backend(StrEnum):
-    LITELLM = "litellm"
-    OPENAI = "openai"
-    OLLAMA = "ollama"
 
 
 @dataclass

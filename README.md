@@ -11,7 +11,7 @@ Welcome! In this repository you will find the code for the book [An Illustrated 
 
 You will build your own Agentic Framework from the ground up using nothing more than lightweight dependencies: 
 
-> `LiteLLM` (cloud LLMs), `Ollama` (local LLMs), `MCP`, `Rich` (cli!) `pygments` (for nice styling 😉)
+> `openai` (LLMs), `MCP`, `Rich` (cli!) `pygments` (for nice styling 😉)
 
 Through the visually educational nature of this book and with **more than 450 custom made figures**, learn the practical tools and concepts you need to use AI Agents today!
 

@@ -1,9 +1,7 @@
 Throughout this book, we are iteratively going to build up our `TinyAgent` using each chapter as a theoretical background for understanding why these particular components are needed and what they can do. This time around, we decided that we wanted to separate the code from the theory a bit more so that we can have more flexibility regarding the code and potential updates that we might do in the upcoming months/years. 
 
-That said, the `TinyAgent` that we will be building throughout this book requires a very minimal set of dependencies. All we want to do is call an LLM and build up our Agent using that. Therefore, we decided on two main options for running your models, `LiteLLM` for all your cloud models and `Ollama` for your local offering. Together, they allow you to run any proprietary model and local model. With `LiteLLM`, you can also run more local models using frameworks like [`llama.cpp`](https://docs.litellm.ai/docs/providers/openai_compatible), [`LMStudio`](https://docs.litellm.ai/docs/providers/lm_studio), and [`vLLM`](https://docs.litellm.ai/docs/providers/vllm).
+That said, the `TinyAgent` that we will be building throughout this book requires a very minimal set of dependencies. All we want to do is call an LLM and build up our Agent using that. Therefore, we decided on using the popular `openai`-endpoint for interacting with LLMs. This allows you to use any local or cloud model!
 
-> [!NOTE]
-> Although `LiteLLM` can also run local models, we decided to use `Ollama` as the main solution throughout the codebase since it allows you to easily turn on and off the reasoning of models. We need this to explain how you can create agentic behavior yourself even when a model was not trained to reason.
 
 # Setting up your environment
 
