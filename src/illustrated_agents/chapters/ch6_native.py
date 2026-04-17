@@ -21,5 +21,6 @@ what_we_built = ChapterOverview(
         ("planning.py", "new", "Added the `NativeReAct` class"),
         ("toolbox.py", None, ""),
         ("tools.py", None, ""),
+        ("trajectory.py", None, ""),
     ]
 )

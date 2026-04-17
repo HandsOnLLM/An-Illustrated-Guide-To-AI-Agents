@@ -1,11 +1,9 @@
 import json
 import inspect
-import litellm
-import ollama
 from openai import OpenAI
 
 from illustrated_agents.utils import ChapterOverview, DiffViewer
-from illustrated_agents.chapters.ch2 import Response, Backend
+from illustrated_agents.chapters.ch2 import Response, Trajectory
 from illustrated_agents.chapters.ch5 import Tools
 from illustrated_agents.chapters import ch2, ch5
 
@@ -39,111 +37,46 @@ def tool_to_schema(function) -> dict:
 
 
 class LLM:
-    def __init__(
-        self,
-        model: str,
-        backend: Backend,
-        api_key: str = "no_key_required",
-        api_base: str = None,
-        think: bool = False,
-        **kwargs,
-    ):
+    def __init__(self, model: str, client: OpenAI, think: bool = False, **kwargs):
         """Initialize the LLM with the given model."""
         self.model = model
-        self.backend = backend
-        self.api_key = api_key
-        self.api_base = api_base
+        self.client = client
         self.think = think
         self.kwargs = kwargs
 
-        if self.backend == Backend.OPENAI:
-            self.client = OpenAI(base_url=api_base, api_key=api_key)
-
     def generate(self, messages: list[dict], tools: list = None) -> Response:
         """Generate a response from the LLM given a list of messages."""
-
-        # LiteLLM
-        if self.backend == Backend.LITELLM:
-            return self.litellm(messages, tools)
-
-        # OpenAI API
-        elif self.backend == Backend.OPENAI:
-            return self.openai(messages, tools)
-
-        # Ollama
-        elif self.backend == Backend.OLLAMA:
-            return self.ollama(messages, tools)
-
+        # Enable/Disable thinking
+        if self.think:
+            extra_body = None
         else:
-            raise ValueError(f"Unsupported backend: {self.backend}")
+            extra_body = {"chat_template_kwargs": {"enable_thinking": False}, "reasoning_effort": "none"}
 
-    def ollama(self, messages: list[dict], tools: list = None) -> Response:
-        """Generate a response from Ollama."""
-        response = ollama.chat(
-            model=self.model,
-            messages=messages,
-            think=self.think,
-            tools=tools,
-            **self.kwargs,
-        )
-
-        # Format as Response dataclass
-        message = response.message
-        has_tool_call = hasattr(message, "tool_calls") and message.tool_calls
-        tool_call = message.tool_calls[0].model_dump() if has_tool_call else None
-
-        return Response(
-            content=message.content,
-            reasoning=getattr(message, "thinking", None),
-            tool_call=tool_call,
-        )
-
-    def openai(self, messages: list[dict], tools: list = None) -> Response:
-        """Generate a response from the OpenAI API."""
+        # Generate a response
         response = self.client.chat.completions.create(
             model=self.model,
             messages=messages,
             tools=tools if tools else None,
-            extra_body={"chat_template_kwargs": {"enable_thinking": False}, "reasoning_effort": "none"}
-            if not self.think
-            else None,
+            extra_body=extra_body,
             **self.kwargs,
         )
 
-        # Format as Response dataclass
+        # Extract message, tool_call, and metadata
         message = response.choices[0].message
         has_tool_call = hasattr(message, "tool_calls") and message.tool_calls
         tool_call = message.tool_calls[0].model_dump() if has_tool_call else None
+        metadata = {
+            "model": response.model,
+            "prompt_tokens": response.usage.prompt_tokens,
+            "completion_tokens": response.usage.completion_tokens,
+        }
 
+        # Format as Response dataclass
         return Response(
             content=message.content,
             reasoning=getattr(message, "reasoning_content", None) or getattr(message, "reasoning", None),
             tool_call=tool_call,
-        )
-
-    def litellm(self, messages: list[dict], tools: list = None) -> Response:
-        """Generate a response from LiteLLM."""
-        response = litellm.completion(
-            model=self.model,
-            messages=messages,
-            api_base=self.api_base,
-            api_key=self.api_key,
-            tools=tools,
-            extra_body={"chat_template_kwargs": {"enable_thinking": False}, "reasoning_effort": "none"}
-            if not self.think
-            else None,
-            **self.kwargs,
-        )
-
-        # Format as Response dataclass
-        message = response.choices[0].message
-        has_tool_call = hasattr(message, "tool_calls") and message.tool_calls
-        tool_call = message.tool_calls[0].model_dump() if has_tool_call else None
-
-        return Response(
-            content=message.content,
-            reasoning=getattr(message, "reasoning_content", None) or getattr(message, "reasoning", None),
-            tool_call=tool_call,
+            metadata=metadata,
         )
 
 
@@ -201,7 +134,7 @@ class NativeTools(Tools):
             tool_call=tool_call,
         )
 
-    def observation(self, result):
+    def observation(self, result) -> tuple[str, str]:
         """Native tool results use the 'tool' role."""
         return "tool", str(result)
 
@@ -220,6 +153,8 @@ class TinyAgent:
         self.planner = None  # Chapter 6: Add Planning
         self.skills = None  # Chapter 6: Add Skills
 
+        self.trajectory = Trajectory()
+
         # Build system prompt with all components
         system_prompt = "You are a helpful assistant.\n\n"
         system_prompt += self.tools.prompt
@@ -228,6 +163,7 @@ class TinyAgent:
     def run(self, task: str) -> str:
         """Run the agent on a task."""
         self.memory.add("user", task)
+        self.trajectory.initialize(task)
 
         return self._step()
 
@@ -242,6 +178,7 @@ class TinyAgent:
 
         # ANSWER: Stopping mechanism
         if self.tools.is_done(response):
+            self.trajectory.add(response)
             return response.content
 
         return self._execute_action(response)
@@ -255,6 +192,7 @@ class TinyAgent:
         # OBSERVATION: add tool results to memory and display
         role, observation = self.tools.observation(result)
         self.memory.add(role, observation)
+        self.trajectory.add(response, observation)
 
         return observation
 
@@ -269,7 +207,7 @@ what_we_built = ChapterOverview(
     ]
 )
 
-llm_diff = DiffViewer(ch2.LLM.openai, LLM.openai, "ch2.LLM", "ch5.LLM")
+llm_diff = DiffViewer(ch2.LLM.generate, LLM.generate, "ch2.LLM", "ch5.LLM")
 tinyagents_diff = DiffViewer(ch5.TinyAgent, TinyAgent, "ch5.TinyAgent", "ch5_native.TinyAgent")
 
 what_we_built = ChapterOverview(
@@ -279,6 +217,7 @@ what_we_built = ChapterOverview(
         ("memory.py", "updated", "Track tool calling and observations in memory."),
         ("toolbox.py", None, ""),
         ("tools.py", "updated", "Create `NativeTools` for native tool calling."),
+        ("trajectory.py", None, ""),
     ]
 )
 

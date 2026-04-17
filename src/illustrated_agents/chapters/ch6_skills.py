@@ -1,6 +1,6 @@
 import yaml
 from pathlib import Path
-from illustrated_agents.chapters.ch2 import Response
+from illustrated_agents.chapters.ch2 import Response, Trajectory
 from illustrated_agents.chapters.ch5_native import LLM, Memory
 from illustrated_agents.chapters.ch6 import Tools, ReAct
 from illustrated_agents.utils import DiffViewer, CodeAnnotator, ChapterOverview
@@ -101,6 +101,8 @@ class TinyAgent:
         self.planner = planner
         self.skills = skills
 
+        self.trajectory = Trajectory()
+
         # Build system prompt with all components
         system_prompt = "You are a helpful assistant.\n"
         system_prompt += self.planner.prompt + "\n"
@@ -111,6 +113,7 @@ class TinyAgent:
     def run(self, task: str) -> str:
         """Run the agent on a task."""
         self.memory.add("user", task)
+        self.trajectory.initialize(task)
 
         # `Autonomy` loop
         for step in range(self.planner.max_steps):
@@ -131,6 +134,7 @@ class TinyAgent:
 
         # ANSWER: Stopping mechanism
         if self.tools.is_done(response):
+            self.trajectory.add(response)
             return response.content
 
         return self._execute_action(response)
@@ -144,6 +148,7 @@ class TinyAgent:
         # OBSERVATION: add tool results to memory and display
         role, observation = self.tools.observation(result)
         self.memory.add(role, observation)
+        self.trajectory.add(response, observation)
 
         return None
 
@@ -157,6 +162,7 @@ what_we_built = ChapterOverview(
         ("skills.py", "new", "Added `Skills` class for loading and activating skills as tools."),
         ("toolbox.py", None, ""),
         ("tools.py", None, ""),
+        ("trajectory.py", None, ""),
     ]
 )
 
@@ -167,12 +173,12 @@ tinyagents_diff = DiffViewer(ch6.TinyAgent, TinyAgent, "ch6.TinyAgent", "ch6_ski
 skills_class_annotated = CodeAnnotator(
     Skills.prompt,
     annotations={
-        5: "Separate section for skill descriptions in the system prompt.",
+        8: "Separate section for skill descriptions in the system prompt.",
         (
-            7,
-            8,
+            10,
+            11,
         ): "Method to activate a skill and retrieve its instructions. The same structure as a tool call is used. Everything is a tool!",
-        13: "Only descriptions go into the prompt - instructions are loaded on demand.",
+        16: "Only descriptions go into the prompt - instructions are loaded on demand.",
     },
 )
 

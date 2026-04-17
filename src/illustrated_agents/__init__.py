@@ -5,6 +5,7 @@ from .planning import ReAct, NativeReAct
 from .tools import Tools, MCPTools, NativeTools
 from .skills import Skills
 from .display import Display
+from .trajectory import Trajectory, Step
 
 __all__ = [
     "TinyAgent",
@@ -18,4 +19,6 @@ __all__ = [
     "NativeTools",
     "Skills",
     "Display",
+    "Trajectory",
+    "Step",
 ]

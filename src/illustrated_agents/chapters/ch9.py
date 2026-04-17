@@ -1,5 +1,5 @@
 from illustrated_agents.chapters import ch5_native, ch6_skills
-from illustrated_agents.chapters.ch2 import Response
+from illustrated_agents.chapters.ch2 import Response, Trajectory
 from illustrated_agents.chapters.ch5_native import Tools, LLM, Memory
 from illustrated_agents.chapters.ch6 import ReAct
 from illustrated_agents.chapters.ch6_skills import Skills
@@ -16,6 +16,8 @@ class TinyAgent:
         self.planner = planner
         self.skills = skills
 
+        self.trajectory = Trajectory()
+
         # Build system prompt with all components
         system_prompt = "You are a helpful assistant.\n"
         system_prompt += self.planner.prompt + "\n"
@@ -26,6 +28,7 @@ class TinyAgent:
     def run(self, task: str, image_data: str = None) -> str:
         """Run the agent on a task."""
         self.memory.add("user", task, image_data=image_data)
+        self.trajectory.initialize(task)
 
         # `Autonomy` loop
         for step in range(self.planner.max_steps):
@@ -46,6 +49,7 @@ class TinyAgent:
 
         # ANSWER: Stopping mechanism
         if self.tools.is_done(response):
+            self.trajectory.add(response)
             return response.content
 
         return self._execute_action(response)
@@ -59,6 +63,7 @@ class TinyAgent:
         # OBSERVATION: add tool results to memory and display
         role, observation = self.tools.observation(result)
         self.memory.add(role, observation)
+        self.trajectory.add(response, observation)
 
         return None
 
@@ -92,20 +97,6 @@ class Memory:
         return self.messages
 
 
-what_we_built = ChapterOverview(
-    [
-        ("agent.py", "updated", "Added the `image_url` parameter to process images."),
-        ("llm.py", None, ""),
-        ("memory.py", "updated", "Track images in the conversation history."),
-        ("reflection.py", None, ""),
-        ("planning.py", None, ""),
-        ("skills.py", None, ""),
-        ("toolbox.py", None, ""),
-        ("tools.py", None, ""),
-    ]
-)
-
-
 tinyagents_diff = DiffViewer(ch6_skills.TinyAgent, TinyAgent, "ch6_skills.TinyAgent", "ch9.TinyAgent")
 memory_diff = DiffViewer(ch5_native.Memory, Memory, "ch5_native.Memory", "ch9.Memory")
 
@@ -119,5 +110,6 @@ what_we_built = ChapterOverview(
         ("skills.py", None, ""),
         ("toolbox.py", None, ""),
         ("tools.py", None, ""),
+        ("trajectory.py", None, ""),
     ]
 )

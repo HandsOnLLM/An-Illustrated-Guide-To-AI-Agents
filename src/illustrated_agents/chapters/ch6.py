@@ -2,7 +2,7 @@ import re
 import json
 from typing import Callable
 from illustrated_agents.chapters import ch5
-from illustrated_agents.chapters.ch2 import Response
+from illustrated_agents.chapters.ch2 import Response, Trajectory
 from illustrated_agents.chapters.ch5_native import LLM, Memory
 from illustrated_agents.utils import DiffViewer, CodeAnnotator, ChapterOverview
 
@@ -169,6 +169,8 @@ class TinyAgent:
         self.planner = planner
         self.skills = None  # Chapter 6: Add Skills
 
+        self.trajectory = Trajectory()
+
         # Build system prompt with all components
         system_prompt = "You are a helpful assistant.\n"
         system_prompt += self.planner.prompt + "\n"
@@ -178,6 +180,7 @@ class TinyAgent:
     def run(self, task: str) -> str:
         """Run the agent on a task."""
         self.memory.add("user", task)
+        self.trajectory.initialize(task)
 
         # `Autonomy` loop
         for step in range(self.planner.max_steps):
@@ -198,6 +201,7 @@ class TinyAgent:
 
         # ANSWER: Stopping mechanism
         if self.tools.is_done(response):
+            self.trajectory.add(response)
             return response.content
 
         return self._execute_action(response)
@@ -211,6 +215,7 @@ class TinyAgent:
         # OBSERVATION: add tool results to memory and display
         role, observation = self.tools.observation(result)
         self.memory.add(role, observation)
+        self.trajectory.add(response, observation)
 
         return None
 
@@ -223,6 +228,7 @@ what_we_built = ChapterOverview(
         ("planning.py", "new", "Added the ReAct (Reason and Act) framework"),
         ("toolbox.py", None, ""),
         ("tools.py", None, ""),
+        ("trajectory.py", None, ""),
     ]
 )
 
@@ -257,8 +263,8 @@ tinyagent_init_annotated = CodeAnnotator(
     TinyAgent.__init__,
     annotations={
         (
-            10,
-            11,
+            12,
+            13,
         ): "We added the prompt of the ReAct module to the system prompt and follow it up with the tools prompt.",
     },
 )
@@ -268,7 +274,7 @@ tinyagent_run_annotated = CodeAnnotator(
     annotations={
         3: "The initial task is immediately added to memory as a user message so that the Agent can reference it during the loop.",
         (
-            6,
+            7,
             9,
         ): "The `Autonomy` (ReAct) loop where the agent performs steps until completion or max steps reached.",
     },
@@ -277,13 +283,13 @@ tinyagent_run_annotated = CodeAnnotator(
 tinyagent_step_annotated = CodeAnnotator(
     TinyAgent._step,
     annotations={
-        (4, 5): "A response is generated and added to memory.",
+        (4, 5): "A response is generated and added to memory and trajectory.",
         8: "The output needs to be parsed into THOUGHT and ACTION using the ReAct parser. That way, we end with a `parsed` dict containing those two elements.",
         (
             11,
-            12,
-        ): "We check if the ACTION contains a tool call that signals completion (final_answer). If so, we return the final answer and end the loop.",
-        14: "If the ACTION contains a tool call, execute it.",
+            13,
+        ): "We check if the ACTION contains a tool call that signals completion (final_answer). If so, we return the final answer and end the loop. The step is also saved to the trajectory.",
+        15: "If the ACTION contains a tool call, execute it.",
     },
 )
 
@@ -295,5 +301,6 @@ tinyagent_action_annotated = CodeAnnotator(
             8,
             9,
         ): "The result of the tool execution is stored as an observation in memory. This way, the LLM can reference the observation in the next step.",
+        10: "The step is also saved to the trajectory with the observation.",
     },
 )

@@ -4,7 +4,7 @@ from typing import Callable
 from illustrated_agents.tools import MCPTools
 from illustrated_agents.utils import DiffViewer, CodeAnnotator, ChapterOverview
 from illustrated_agents.chapters import ch4
-from illustrated_agents.chapters.ch2 import LLM, Response
+from illustrated_agents.chapters.ch2 import LLM, Response, Trajectory
 from illustrated_agents.chapters.ch4 import Memory
 
 
@@ -98,6 +98,8 @@ class TinyAgent:
         self.planner = None  # Chapter 6: Add Planning
         self.skills = None  # Chapter 6: Add Skills
 
+        self.trajectory = Trajectory()
+
         # Build system prompt with all components
         system_prompt = "You are a helpful assistant.\n\n"
         system_prompt += self.tools.prompt
@@ -106,6 +108,7 @@ class TinyAgent:
     def run(self, task: str) -> str:
         """Run the agent on a task."""
         self.memory.add("user", task)
+        self.trajectory.initialize(task)
 
         return self._step()
 
@@ -120,6 +123,7 @@ class TinyAgent:
 
         # ANSWER: Stopping mechanism
         if self.tools.is_done(response):
+            self.trajectory.add(response)
             return response.content
 
         return self._execute_action(response)
@@ -133,6 +137,7 @@ class TinyAgent:
         # OBSERVATION: add tool results to memory and display
         role, observation = self.tools.observation(result)
         self.memory.add(role, observation)
+        self.trajectory.add(response, observation)
 
         return observation
 
@@ -144,6 +149,7 @@ what_we_built = ChapterOverview(
         ("memory.py", None, ""),
         ("toolbox.py", "new", "This file tracks all tools that were created for easy reference."),
         ("tools.py", "new", "Created a tool registry, parsing, and execution class."),
+        ("trajectory.py", None, ""),
     ]
 )
 
@@ -154,6 +160,7 @@ what_we_built_mcp = ChapterOverview(
         ("memory.py", None, ""),
         ("toolbox.py", None, ""),
         ("tools.py", "updated", "Added `MCPTools` to use Model Context Protocol (MCP)."),
+        ("trajectory.py", None, ""),
     ]
 )
 
@@ -164,7 +171,7 @@ tinyagents_diff = DiffViewer(ch4.TinyAgent, TinyAgent, "ch4.TinyAgent", "ch5.Tin
 agent_init_annotated = CodeAnnotator(
     TinyAgent.__init__,
     annotations={
-        (9, 12): """
+        (11, 13): """
 A system prompt is constructed that includes the base instruction and the tool descriptions. 
 This system prompt is added to memory at initialization so that the LLM is aware of the tools from the very beginning.
 """,
@@ -174,7 +181,8 @@ This system prompt is added to memory at initialization so that the LLM is aware
 agent_step_annotated = CodeAnnotator(
     TinyAgent._step,
     annotations={
-        (7, 9): """
+        8: "The tool call is parsed to extract the tool name and arguments.",
+        (10, 13): """
 After generating a response, we check if the response contains a tool call. If it does, we execute the tool action instead of returning the LLM's response directly.
 """,
     },
@@ -183,9 +191,9 @@ After generating a response, we check if the response contains a tool call. If i
 agent_execute_action_annotated = CodeAnnotator(
     TinyAgent._execute_action,
     annotations={
-        3: "(1) The tool call is parsed to extract the tool name and arguments.",
-        6: "(2) the tool is executed using the `Tools` class which looks up the tool in the registry and calls it.",
-        8: "(3) The result of the tool execution is stored as an observation in memory.",
+        5: "(1) the tool is executed using the `Tools` class which looks up the tool in the registry and calls it.",
+        9: "(2) The result of the tool execution is stored as an observation in memory.",
+        10: "(3) The trajectory is updated with the tool call and observation.",
     },
 )
 

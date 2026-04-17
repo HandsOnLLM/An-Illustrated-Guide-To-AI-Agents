@@ -1,5 +1,5 @@
 from illustrated_agents.utils import CodeAnnotator, DiffViewer, ChapterOverview
-from illustrated_agents.chapters.ch2 import LLM
+from illustrated_agents.chapters.ch2 import LLM, Trajectory
 from illustrated_agents.chapters import ch2
 
 
@@ -28,9 +28,12 @@ class TinyAgent:
         self.planner = None  # Chapter 6: Add Planning
         self.skills = None  # Chapter 6: Add Skills
 
+        self.trajectory = Trajectory()
+
     def run(self, task: str) -> str:
         """Run the agent on a task."""
         self.memory.add("user", task)
+        self.trajectory.initialize(task)
 
         return self._step()
 
@@ -39,6 +42,7 @@ class TinyAgent:
         # Generate response and add to memory
         response = self.llm.generate(self.memory.get_messages())
         self.memory.add("assistant", response.content)
+        self.trajectory.add(response)
         return response.content
 
     def _execute_action(self, action: str) -> str | None:
@@ -52,6 +56,7 @@ what_we_built = ChapterOverview(
         ("agent.py", "updated", "Integrated `Memory` into your `TinyAgent`."),
         ("llm.py", None, ""),
         ("memory.py", "new", "Track conversation history."),
+        ("trajectory.py", None, ""),
     ]
 )
 
@@ -59,9 +64,9 @@ what_we_built = ChapterOverview(
 tinyagent_annotated = CodeAnnotator(
     TinyAgent,
     annotations={
-        14: "1. The user's query is added to the `Memory` module",
-        21: "2. Based on the current memory, the LLM generates a response.",
-        22: "3. The response of the LLM is added to the `Memory` module.",
+        15: "1. The user's query is added to the `Memory` module",
+        23: "2. Based on the current memory, the LLM generates a response.",
+        24: "3. The response of the LLM is added to the `Memory` module.",
     },
 )
 

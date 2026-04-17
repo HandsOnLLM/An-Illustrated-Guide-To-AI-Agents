@@ -1,5 +1,3 @@
-import litellm
-import ollama
 from openai import OpenAI
 
 from enum import StrEnum
@@ -20,105 +18,88 @@ class Response:
     """Structured response from LLM calls."""
 
     content: str = ""
-    reasoning: str = None
-    tool_call: dict = None
+    reasoning: str | None = None
+    tool_call: dict | None = None
+    metadata: dict | None = None
 
 
 class LLM:
-    def __init__(
-        self,
-        model: str,
-        backend: Backend,
-        api_key: str = "no_key_required",
-        api_base: str = None,
-        think: bool = False,
-        **kwargs,
-    ):
+    def __init__(self, model: str, client: OpenAI, think: bool = False, **kwargs):
         """Initialize the LLM with the given model."""
         self.model = model
-        self.backend = backend
-        self.api_key = api_key
-        self.api_base = api_base
+        self.client = client
         self.think = think
         self.kwargs = kwargs
 
-        if self.backend == Backend.OPENAI:
-            self.client = OpenAI(base_url=api_base, api_key=api_key)
-
     def generate(self, messages: list[dict]) -> Response:
         """Generate a response from the LLM given a list of messages."""
-
-        # LiteLLM
-        if self.backend == Backend.LITELLM:
-            return self.litellm(messages)
-
-        # OpenAI API
-        elif self.backend == Backend.OPENAI:
-            return self.openai(messages)
-
-        # Ollama
-        elif self.backend == Backend.OLLAMA:
-            return self.ollama(messages)
-
+        # Enable/Disable thinking
+        if self.think:
+            extra_body = None
         else:
-            raise ValueError(f"Unsupported backend: {self.backend}")
+            extra_body = {"chat_template_kwargs": {"enable_thinking": False}, "reasoning_effort": "none"}
 
-    def ollama(self, messages: list[dict]) -> Response:
-        """Generate a response from Ollama."""
-        response = ollama.chat(
-            model=self.model,
-            messages=messages,
-            think=self.think,
-            **self.kwargs,
-        )
-
-        # Format as Response dataclass
-        message = response.message
-        response = Response(
-            content=message.content,
-            reasoning=getattr(message, "thinking", None),
-        )
-        return response
-
-    def openai(self, messages: list[dict]) -> Response:
-        """Generate a response from the OpenAI API."""
+        # Generate a response
         response = self.client.chat.completions.create(
             model=self.model,
             messages=messages,
-            extra_body={"chat_template_kwargs": {"enable_thinking": False}, "reasoning_effort": "none"}
-            if not self.think
-            else None,
+            extra_body=extra_body,
             **self.kwargs,
         )
 
-        # Format as Response dataclass
+        # Extract message and metadata
         message = response.choices[0].message
-        response = Response(
-            content=message.content,
-            reasoning=getattr(message, "reasoning_content", None) or getattr(message, "reasoning", None),
-        )
-        return response
-
-    def litellm(self, messages: list[dict]) -> Response:
-        """Generate a response from LiteLLM."""
-        response = litellm.completion(
-            model=self.model,
-            messages=messages,
-            api_base=self.api_base,
-            api_key=self.api_key,
-            extra_body={"chat_template_kwargs": {"enable_thinking": False}, "reasoning_effort": "none"}
-            if not self.think
-            else None,
-            **self.kwargs,
-        )
+        metadata = {
+            "model": response.model,
+            "prompt_tokens": response.usage.prompt_tokens,
+            "completion_tokens": response.usage.completion_tokens,
+        }
 
         # Format as Response dataclass
-        message = response.choices[0].message
-        response = Response(
+        return Response(
             content=message.content,
             reasoning=getattr(message, "reasoning_content", None) or getattr(message, "reasoning", None),
+            metadata=metadata,
         )
-        return response
+
+
+@dataclass
+class Step:
+    """A single step in an agent's trajectory."""
+
+    thought: str = ""
+    action: dict | None = None
+    observation: str | None = None
+    answer: str | None = None
+    metadata: dict | None = None
+
+
+class Trajectory:
+    """Records agent execution as a sequence of runs."""
+
+    def __init__(self) -> None:
+        self.runs: list[dict] = []
+
+    def initialize(self, query: str) -> None:
+        """Register a new run with the given query."""
+        self.runs.append({"query": query, "steps": []})
+
+    def add(self, response: Response, observation: str | None = None) -> None:
+        """Record a step from a Response, optionally with an observation."""
+        # Add THOUGHT
+        step = Step(
+            thought=response.reasoning or "",
+            metadata=response.metadata,
+        )
+
+        # Add ACTION/OBSERVATION or ANSWER
+        if observation is not None:
+            step.action = response.tool_call
+            step.observation = observation
+        else:
+            step.answer = response.content
+
+        self.runs[-1]["steps"].append(step)
 
 
 class TinyAgent:
@@ -131,14 +112,18 @@ class TinyAgent:
         self.planner = None  # Chapter 6: Add Planning
         self.skills = None  # Chapter 6: Add Skills
 
+        self.trajectory = Trajectory()
+
     def run(self, task: str) -> str:
         """Run the agent on a task."""
+        self.trajectory.initialize(task)
         return self._step(task)
 
     def _step(self, task: str) -> str:
         """Perform a single step."""
         messages = [{"role": "user", "content": task}]
         response = self.llm.generate(messages)
+        self.trajectory.add(response)
         return response.content
 
     def _execute_action(self, action: str) -> str | None:
@@ -151,22 +136,35 @@ what_we_built = ChapterOverview(
     [
         ("agent.py", "updated", "Integrated the `LLM` into your `TinyAgent`"),
         ("llm.py", "new", "An LLM wrapper for local or cloud models."),
+        ("trajectory.py", "new", "A structured way to record agent execution."),
     ]
 )
 
 
-llm_annotated = CodeAnnotator(
-    LLM.openai,
+trajectory_add_annotated = CodeAnnotator(
+    Trajectory.add,
     annotations={
         (
-            3,
-            9,
-        ): "We call the 'completion' function with any additional keyword arguments which gives back the `response` object from the LLM API.",
+            4,
+            7,
+        ): "Add the potential reasoning (THOUGHT) and metadata from the LLM response to the step.",
         (
-            13,
-            18,
-        ): "Although some LLMs return explicit tool calls or reasoning traces, we simply extract the answer only. This allows us to create Agents from any LLM, even those that don't support tool calls natively.",
+            11,
+            12,
+        ): "Add the tool call (ACTION) and observation (OBSERVATION)",
+        14: "If there's no observation, this is a final answer (ANSWER)",
+        17: "Finally, we add the step to the list.",
     },
 )
 
+
+llm_annotated = CodeAnnotator(
+    LLM.generate,
+    annotations={
+        (
+            10,
+            15,
+        ): "We call the 'completion' function with any additional keyword arguments which gives back the `response` object from the OpenAI API.",
+    },
+)
 tinyagents_diff = DiffViewer(ch1.TinyAgent, TinyAgent, "ch1.TinyAgent", "ch2.TinyAgent")

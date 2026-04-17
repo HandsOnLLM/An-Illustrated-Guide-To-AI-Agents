@@ -6,7 +6,7 @@ from rich.console import Console
 from rich.rule import Rule
 
 
-from illustrated_agents.chapters.ch2 import Response
+from illustrated_agents.chapters.ch2 import Response, Trajectory
 from illustrated_agents.chapters.ch5_native import LLM, tool_to_schema
 from illustrated_agents.chapters.ch6_skills import Skills
 from illustrated_agents.chapters.ch6 import ReAct
@@ -179,6 +179,8 @@ class TinyAgent:
         self.skills = skills
         self.display = display
 
+        self.trajectory = Trajectory()
+
         # Build system prompt with all components
         system_prompt = "You are a helpful assistant.\n"
         system_prompt += self.planner.prompt + "\n"
@@ -189,6 +191,7 @@ class TinyAgent:
     def run(self, task: str, image_data: str = None) -> str:
         """Run the agent on a task."""
         self.memory.add("user", task, image_data=image_data)
+        self.trajectory.initialize(task)
 
         # `Autonomy` loop
         for step in range(self.planner.max_steps):
@@ -210,6 +213,7 @@ class TinyAgent:
 
         # ANSWER: Stopping mechanism
         if self.tools.is_done(response):
+            self.trajectory.add(response)
             return response.content
 
         return self._execute_action(response)
@@ -224,6 +228,7 @@ class TinyAgent:
         # OBSERVATION: add tool results to memory and display
         role, observation = self.tools.observation(result)
         self.memory.add(role, observation)
+        self.trajectory.add(response, observation)
         self.display("observation", observation)
 
         return None
@@ -277,10 +282,10 @@ what_we_built = ChapterOverview(
         ("llm.py", None, ""),
         ("memory.py", None, ""),
         ("planning.py", None, ""),
-        ("reflection.py", None, ""),
         ("skills.py", None, ""),
         ("toolbox.py", "updated", "Added tools for Coding Agents."),
         ("tools.py", "updated", "Added XML-based tool parsing and calling with human-in-the-loop checks."),
+        ("trajectory.py", None, ""),
     ]
 )
 
