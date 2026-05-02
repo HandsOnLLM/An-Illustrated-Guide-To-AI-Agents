@@ -54,3 +54,15 @@ class LLM:
             tool_call=tool_call,
             metadata=metadata,
         )
+
+
+class EmbeddingModel:
+    """A model to generate embeddings."""
+
+    def __init__(self, model: str, client: OpenAI):
+        self.model = model
+        self.client = client
+
+    def embed(self, text: str) -> list[float]:
+        """Convert text into a numerical vector."""
+        return self.client.embeddings.create(model=self.model, input=text).data[0].embedding
