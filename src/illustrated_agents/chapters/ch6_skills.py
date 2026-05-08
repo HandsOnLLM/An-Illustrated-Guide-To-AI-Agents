@@ -1,7 +1,7 @@
 import yaml
 from pathlib import Path
-from illustrated_agents.chapters.ch2 import Response, Trajectory
-from illustrated_agents.chapters.ch5_native import LLM, Memory
+from illustrated_agents.chapters.ch2 import LLM, Response, Trajectory
+from illustrated_agents.chapters.ch4 import Memory
 from illustrated_agents.chapters.ch6 import Tools, ReAct
 from illustrated_agents.utils import DiffViewer, CodeAnnotator, ChapterOverview
 from illustrated_agents.chapters import ch6

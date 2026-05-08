@@ -46,11 +46,7 @@ class Tools:
     """Tool registry for the Agent."""
 
     def __init__(self, requires_approval: list[str] = []):
-        """Initialize Tools
-
-        Arguments:
-            requires_approval: A list of tool names that require human approval
-        """
+        """Initialize and select tools that require approval before execution."""
         self.registry = {}
         self.requires_approval = requires_approval
 
@@ -120,16 +116,18 @@ To use a tool, respond with JSON: {{"tool": "name", "kwargs": {{"param": "value"
 
         return f"Tool '{name}' not found."
 
-    def is_done(self, response: Response) -> bool:
-        """The `TinyAgent` is done when it uses the `final_answer` tool."""
-        if response.tool_call and response.tool_call["tool"] == "final_answer":
-            response.content = response.tool_call.get("kwargs", "")
-            return True
-        return False
-
     def observation(self, result):
         """Return the observation as a user."""
         return "user", f"OBSERVATION: {result}"
+
+    def is_done(self, response: Response) -> bool:
+        """The `TinyAgent`'s stopping mechanism."""
+        if not response.tool_call:
+            return True
+        if response.tool_call["tool"] == "final_answer":
+            response.content = response.tool_call.get("kwargs", "")
+            return True
+        return False
 
     @property
     def schemas(self):
@@ -217,7 +215,7 @@ class NativeTools(Tools):
             tool_call=tool_call,
         )
 
-    def observation(self, result):
+    def observation(self, result) -> tuple[str, str]:
         """Native tool results use the 'tool' role."""
         return "tool", str(result)
 

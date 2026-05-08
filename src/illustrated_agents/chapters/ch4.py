@@ -23,9 +23,16 @@ class Memory:
     def __init__(self):
         self.messages = []
 
-    def add(self, role: str, content: str):
+    def add(self, role: str, content: str, tool_call: dict = None):
         """Add a message to memory."""
-        self.messages.append({"role": role, "content": content})
+        message = {"role": role, "content": content}
+
+        # Tool call
+        if tool_call:
+            message["tool_calls"] = [tool_call]
+
+        # Append message to memory
+        self.messages.append(message)
 
     def get_messages(self) -> list[dict]:
         """Get all messages."""
@@ -168,11 +175,15 @@ memory_annotated = CodeAnnotator(
     Memory,
     annotations={
         5: "We keep track of a list of messages where each message is a dict with 'role' and 'content'.",
-        (7, 9): """Whenever we add a new message, we append it to the list of messages and define the 
+        9: """Whenever we add a new message, we append it to the list of messages and define the 
         role (e.g., 'user' or 'assistant') and the content of the message.""",
         (
             11,
             13,
+        ): "Tool calls are tracked if they exist. This will be important in Chapter 5 when we add tools to our agent.",
+        (
+            18,
+            20,
         ): "To retrieve the conversation history, we simply return the list of messages stored in memory.",
     },
 )

@@ -1,6 +1,7 @@
-from illustrated_agents.chapters import ch5_native, ch6_skills
-from illustrated_agents.chapters.ch2 import Response, Trajectory
-from illustrated_agents.chapters.ch5_native import Tools, LLM, Memory
+from illustrated_agents.chapters import ch4, ch6_skills
+from illustrated_agents.chapters.ch2 import LLM, Response, Trajectory
+from illustrated_agents.chapters.ch4 import Memory
+from illustrated_agents.chapters.ch5 import Tools
 from illustrated_agents.chapters.ch6 import ReAct
 from illustrated_agents.chapters.ch6_skills import Skills
 from illustrated_agents.utils import DiffViewer, ChapterOverview
@@ -68,11 +69,8 @@ class TinyAgent:
         return None
 
 
-class Memory:
+class MultimodalMemory(Memory):
     """Simple memory module to store conversation history."""
-
-    def __init__(self):
-        self.messages = []
 
     def add(self, role: str, content: str, tool_call: dict = None, image_data: str = None):
         """Add a message to memory."""
@@ -92,13 +90,9 @@ class Memory:
         # Append message to memory
         self.messages.append(message)
 
-    def get_messages(self) -> list[dict]:
-        """Get all messages."""
-        return self.messages
-
 
 tinyagents_diff = DiffViewer(ch6_skills.TinyAgent, TinyAgent, "ch6_skills.TinyAgent", "ch9.TinyAgent")
-memory_diff = DiffViewer(ch5_native.Memory, Memory, "ch5_native.Memory", "ch9.Memory")
+memory_diff = DiffViewer(ch4.Memory, MultimodalMemory, "ch4.Memory", "ch9.MultimodalMemory")
 
 
 what_we_built = ChapterOverview(

@@ -1,3 +1,4 @@
+import inspect
 import json
 from typing import Callable
 
@@ -8,11 +9,41 @@ from illustrated_agents.chapters.ch2 import LLM, Response, Trajectory
 from illustrated_agents.chapters.ch4 import Memory
 
 
+# Convert specific types to string descriptions
+TYPE_MAP = {str: "string", int: "integer", float: "number", bool: "boolean", list: "array", dict: "object"}
+
+
+def tool_to_schema(function) -> dict:
+    """Convert a Python function to an OpenAI-style tool schema."""
+    signature = inspect.signature(function)
+
+    # Extract meatadata
+    properties, required = {}, []
+    for name, parameter in signature.parameters.items():
+        properties[name] = {"type": TYPE_MAP.get(parameter.annotation, "string")}
+        if parameter.default is inspect.Parameter.empty:
+            required.append(name)
+
+    # Fill schema
+    schema = {
+        "type": "function",
+        "function": {
+            "name": function.__name__,
+            "description": inspect.getdoc(function),
+            "parameters": {"type": "object", "properties": properties, "required": required},
+        },
+    }
+
+    return schema
+
+
 class Tools:
     """Tool registry for the Agent."""
 
-    def __init__(self):
+    def __init__(self, requires_approval: list[str] = []):
+        """Initialize and select tools that require approval before execution."""
         self.registry = {}
+        self.requires_approval = requires_approval
 
     def add_tool(self, name: str, func: Callable, description: str = ""):
         """Register a tool that the Agent can use.
@@ -67,6 +98,12 @@ To use a tool, respond with JSON: {{"tool": "name", "kwargs": {{"param": "value"
         tool_call = response.tool_call
         name, kwargs = tool_call["tool"], tool_call.get("kwargs", {})
 
+        # Human-in-the-loop: ask before running dangerous tools
+        if name in self.registry and name in self.requires_approval:
+            response = input(f"Allow {name}? [y/N] ").strip().lower()
+            if response not in ("y", "yes"):
+                return f"Tool '{name}' was denied by the user."
+
         # Handle registered tools
         if name in self.registry:
             tool_func = self.registry[name]["function"]
@@ -79,13 +116,59 @@ To use a tool, respond with JSON: {{"tool": "name", "kwargs": {{"param": "value"
         return "user", f"OBSERVATION: {result}"
 
     def is_done(self, response: Response) -> bool:
-        """The `TinyAgent` is done if there is no tool call."""
-        return not response.tool_call
+        """The `TinyAgent`'s stopping mechanism."""
+        if not response.tool_call:
+            return True
+        if response.tool_call["tool"] == "final_answer":
+            response.content = response.tool_call.get("kwargs", "")
+            return True
+        return False
 
     @property
     def schemas(self):
         """Used only for native tool-calling."""
         return None
+
+
+class NativeTools(Tools):
+    """Tool registry using native function calling."""
+
+    @property
+    def schemas(self) -> list:
+        """Return tool functions for native function calling."""
+        return [tool_to_schema(tool["function"]) for tool in self.registry.values()]
+
+    @property
+    def prompt(self) -> str:
+        """Empty because we don't need a prompt for native tool calling"""
+        return ""
+
+    def parse(self, response: Response) -> Response:
+        """Parse a tool call."""
+        # If there's no tool call, return the response as is
+        if not response.tool_call:
+            return response
+
+        # Extract the tool name and arguments from the tool call
+        args = response.tool_call["function"]["arguments"]
+        if isinstance(args, str):
+            args = json.loads(args)
+        tool_call = {"tool": response.tool_call["function"]["name"], "kwargs": args}
+
+        # Add the parsed tool call to the response
+        return Response(
+            content=response.content,
+            reasoning=response.reasoning,
+            tool_call=tool_call,
+        )
+
+    def observation(self, result) -> tuple[str, str]:
+        """Native tool results use the 'tool' role."""
+        return "tool", str(result)
+
+    def is_done(self, response: Response) -> bool:
+        """No tool call means the `TinyAgent` is done."""
+        return not response.tool_call
 
 
 class TinyAgent:
@@ -115,8 +198,8 @@ class TinyAgent:
     def _step(self) -> str:
         """Perform a single step."""
         # THOUGHT: Generate response and add to memory
-        response = self.llm.generate(self.memory.get_messages())
-        self.memory.add("assistant", response.content)
+        response = self.llm.generate(self.memory.get_messages(), tools=self.tools.schemas)
+        self.memory.add("assistant", response.content, tool_call=response.tool_call)
 
         # Tool parsing
         response = self.tools.parse(response)
@@ -164,6 +247,17 @@ what_we_built_mcp = ChapterOverview(
     ]
 )
 
+what_we_built_native = ChapterOverview(
+    [
+        ("agent.py", "updated", "Updated `TinyAgent` to handle native tool calling."),
+        ("llm.py", "updated", "Extract tool calls from LLM response metadata instead of text parsing."),
+        ("memory.py", "updated", "Track tool calling and observations in memory."),
+        ("toolbox.py", None, ""),
+        ("tools.py", "updated", "Create `NativeTools` for native tool calling."),
+        ("trajectory.py", None, ""),
+    ]
+)
+
 
 tinyagents_diff = DiffViewer(ch4.TinyAgent, TinyAgent, "ch4.TinyAgent", "ch5.TinyAgent")
 
@@ -182,7 +276,7 @@ agent_step_annotated = CodeAnnotator(
     TinyAgent._step,
     annotations={
         8: "The tool call is parsed to extract the tool name and arguments.",
-        (10, 13): """
+        (11, 13): """
 After generating a response, we check if the response contains a tool call. If it does, we execute the tool action instead of returning the LLM's response directly.
 """,
     },
@@ -211,9 +305,12 @@ execute_tool_annotated = CodeAnnotator(
     Tools.execute,
     annotations={
         (7, 8): "The tool name and possible arguments are extracted from the parsed tool call.",
-        (12, 13): "Tools are looked up in the registry and executed with the provided arguments.",
-        15: "If the tool is not found, an error message is returned which can be saved in the Agent's memory as feedback.",
-        16: "",
+        (
+            11,
+            14,
+        ): "If the tool requires approval, we ask the user for confirmation before executing it. More on this in Chapter 11.",
+        (17, 19): "Tools are looked up in the registry and executed with the provided arguments.",
+        21: "Returns an error message to the LLM if the tool is not found..",
     },
 )
 
@@ -227,7 +324,11 @@ observation_tool_annotated = CodeAnnotator(
 done_tool_annotated = CodeAnnotator(
     Tools.is_done,
     annotations={
-        3: "A simple stopping mechanism is implemented where the agent is considered done if there is no tool call in the response.",
+        (3, 4): "Stops when there is no tool call.",
+        (
+            6,
+            7,
+        ): "Stops when the `final_answer` tool is called, which allows the agent to signal that it has completed the task and provide a final answer. Only used in Chapter 6!)",
     },
 )
 

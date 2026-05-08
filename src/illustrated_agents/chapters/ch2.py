@@ -24,24 +24,30 @@ class LLM:
         self.think = think
         self.kwargs = kwargs
 
-    def generate(self, messages: list[dict]) -> Response:
+    def generate(self, messages: list[dict], tools: list = None) -> Response:
         """Generate a response from the LLM given a list of messages."""
         # Enable/Disable thinking
         if self.think:
             extra_body = None
         else:
-            extra_body = {"chat_template_kwargs": {"enable_thinking": False}, "reasoning_effort": "none"}
+            extra_body = {
+                "chat_template_kwargs": {"enable_thinking": False},
+                "reasoning_effort": "none",
+            }
 
         # Generate a response
         response = self.client.chat.completions.create(
             model=self.model,
             messages=messages,
+            tools=tools if tools else None,
             extra_body=extra_body,
             **self.kwargs,
         )
 
-        # Extract message and metadata
+        # Extract message, tool_call, and metadata
         message = response.choices[0].message
+        has_tool_call = hasattr(message, "tool_calls") and message.tool_calls
+        tool_call = message.tool_calls[0].model_dump() if has_tool_call else None
         metadata = {
             "model": response.model,
             "prompt_tokens": response.usage.prompt_tokens,
@@ -52,6 +58,7 @@ class LLM:
         return Response(
             content=message.content,
             reasoning=getattr(message, "reasoning_content", None) or getattr(message, "reasoning", None),
+            tool_call=tool_call,
             metadata=metadata,
         )
 
@@ -155,9 +162,14 @@ llm_annotated = CodeAnnotator(
     LLM.generate,
     annotations={
         (
-            10,
-            15,
+            13,
+            19,
         ): "We call the 'completion' function with any additional keyword arguments which gives back the `response` object from the OpenAI API.",
+        (
+            22,
+            29,
+        ): "We then extract the content, reasoning, tool calls, and metadata from the response",
+        (32, 37): "Finally, we format this into our `Response` dataclass and return it.",
     },
 )
 tinyagents_diff = DiffViewer(ch1.TinyAgent, TinyAgent, "ch1.TinyAgent", "ch2.TinyAgent")
