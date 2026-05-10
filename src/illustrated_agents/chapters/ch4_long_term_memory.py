@@ -13,7 +13,11 @@ class EmbeddingModel:
 
     def embed(self, text: str) -> list[float]:
         """Convert text into a numerical vector."""
-        return self.client.embeddings.create(model=self.model, input=text).data[0].embedding
+        return (
+            self.client.embeddings.create(model=self.model, input=text)
+            .data[0]
+            .embedding
+        )
 
 
 class LongTermMemory(Memory):
@@ -52,8 +56,16 @@ Question: {content}"""
 what_we_built = ChapterOverview(
     [
         ("agent.py", None, ""),
-        ("llm.py", "updated", "Add `EmbeddingModel` to support long-term memory."),
-        ("memory.py", "updated", "Add `LongTermMemory` to the TinyAgent in the form of RAG."),
+        (
+            "llm.py",
+            "updated",
+            "Add `EmbeddingModel` to support long-term memory.",
+        ),
+        (
+            "memory.py",
+            "updated",
+            "Add `LongTermMemory` to the TinyAgent in the form of RAG.",
+        ),
         ("trajectory.py", None, ""),
     ]
 )

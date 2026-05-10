@@ -2,11 +2,12 @@ import argparse
 
 from dotenv import load_dotenv
 from pathlib import Path
+from openai import OpenAI
 from rich.console import Console
 from rich.table import Table
 
 import illustrated_agents
-from illustrated_agents import LLM, Memory, Skills, TinyAgent, NativeReAct
+from illustrated_agents import LLM, Memory, TinyAgent, NativeReAct
 from illustrated_agents.display import label, Display, LOGO, FLAMINGO_LOGO
 from illustrated_agents.toolbox import create_native_code_tools
 
@@ -85,18 +86,16 @@ def main():
     display = Display(pink=args.pink)
 
     # LLM
-    llm = LLM(
-        model=args.model, api_base=args.api_base, api_key=args.api_key, backend=args.backend, think=True
-    )
+    client = OpenAI(base_url="http://localhost:11434/v1/", api_key="no_key")
+    llm = LLM(model="gemma4:e4b", client=client, think=True)
+    # llm = LLM(
+    #     model=args.model, api_base=args.api_base, api_key=args.api_key, backend=args.backend, think=True
+    # )
 
-    # Skills
-    skills = Skills()
-    file_analyzer_path = Path(illustrated_agents.__file__).parent / "skills" / "file_analyzer" / "SKILL.md"
-    skills.add_skill(file_analyzer_path)
-
-    # Tools
+    # Tools and Skills
     tools = create_native_code_tools()
-    tools.add_tool("use_skill", skills.as_tool("use_skill"))
+    file_analyzer_path = Path(illustrated_agents.__file__).parent / "skills" / "file_analyzer" / "SKILL.md"
+    tools.add_skill(file_analyzer_path)
 
     # ReAct planner with native reasoning and tool calling (no text parsing needed)
     planner = NativeReAct(max_steps=10)
@@ -107,17 +106,16 @@ def main():
         memory=Memory(),
         tools=tools,
         planner=planner,
-        skills=skills,
         display=display,
     )
 
     # Display welcome message with model, tools, and skills
     tool_names = ", ".join(agent.tools.registry.keys())
-    skill_names = ", ".join(skills.skills.keys())
+    # skill_names = ", ".join(skills.skills.keys())
     console.print(FLAMINGO_LOGO if args.pink else LOGO)
     console.print(f"\n  [dim]Model:[/]  {args.model}")
     console.print(f"  [dim]Tools:[/]  {tool_names}")
-    console.print(f"  [dim]Skills:[/] {skill_names}")
+    # console.print(f"  [dim]Skills:[/] {skill_names}")
     console.print("  [dim]Type[/] /help [dim]for commands.[/]\n")
 
     while True:

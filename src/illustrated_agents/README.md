@@ -11,9 +11,8 @@ The general idea is that each module is self-contained and added to the `TinyAge
 # Modules to augment your Agent
 from illustrated_agents.llm import LLM  # llm.py
 from illustrated_agents.memory import Memory  # memory.py
-from illustrated_agents.tools import NativeTools  # tools.py
+from illustrated_agents.tools import Tools, Skills  # tools.py
 from illustrated_agents.planning import NativeReAct  # planning.py
-from illustrated_agents.skills import Skills  # skills.py
 from illustrated_agents.toolbox import get_weather  # toolbox.py
 
 # The TinyAgent
@@ -28,14 +27,13 @@ memory = Memory()
 # Create autonomous behavior through explicit THOUGHT/ACTION/OBSERVATION cycles
 react = ReAct(max_steps=10)
 
-# Add SKILL.md
-skills = Skills()
-skills.add_skill(path_to_my_skill.md)
-
-# Add Tools through explicit tool calling
-tools = Tools()
+# Add Tools through explicit tool calling 
+tools = Skills()
 tools.add_tool("my_tool", my_tool)
-tools.add_tool("my_skill", skills.as_tool("my_skill"))
+
+# Add Skill
+tools.add_skill(path_to_my_skill.md)
+
 
 # Create agent
 agent = TinyAgent(

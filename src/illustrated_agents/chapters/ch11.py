@@ -5,7 +5,6 @@ from rich.rule import Rule
 from illustrated_agents.chapters.ch2 import LLM, Response, Trajectory
 from illustrated_agents.chapters.ch4 import Memory
 from illustrated_agents.chapters.ch5 import Tools
-from illustrated_agents.chapters.ch6_skills import Skills
 from illustrated_agents.chapters.ch6 import ReAct
 
 from illustrated_agents.utils import CodeAnnotator, DiffViewer, ChapterOverview
@@ -25,16 +24,22 @@ class Display:
 
         # Print THOUGHT
         elif event == "response":
-            console.print(f"  [bold dark_orange]{'THOUGHT':<13}[/][dim italic]{data.reasoning}[/]")
+            console.print(
+                f"  [bold dark_orange]{'THOUGHT':<13}[/][dim italic]{data.reasoning}[/]"
+            )
 
             if data.content:
-                console.print(f"  [bold cyan]{'ANSWER':<13}[/][dim italic]{data.content}[/]")
+                console.print(
+                    f"  [bold cyan]{'ANSWER':<13}[/][dim italic]{data.content}[/]"
+                )
 
         # Print ACTION
         elif event == "tool_call" and data.tool_call:
             tool = data.tool_call["tool"]
             kwargs = data.tool_call["kwargs"]
-            console.print(f"  [bold yellow]{'ACTION':<13}[/][yellow]{tool}({kwargs})[/]")
+            console.print(
+                f"  [bold yellow]{'ACTION':<13}[/][yellow]{tool}({kwargs})[/]"
+            )
 
         # Print OBSERVATION
         elif event == "observation":
@@ -46,13 +51,17 @@ class TinyAgent:
     """A minimal, modular, and educational agent framework."""
 
     def __init__(
-        self, llm: LLM, memory: Memory, tools: Tools, planner: ReAct, skills: Skills, display=Display
+        self,
+        llm: LLM,
+        memory: Memory,
+        tools: Tools,
+        planner: ReAct,
+        display=Display,
     ):
         self.llm = llm
         self.memory = memory
         self.tools = tools
         self.planner = planner
-        self.skills = skills
         self.display = display
 
         self.trajectory = Trajectory()
@@ -61,7 +70,6 @@ class TinyAgent:
         system_prompt = "You are a helpful assistant.\n"
         system_prompt += self.planner.prompt + "\n"
         system_prompt += self.tools.prompt + "\n"
-        system_prompt += self.skills.prompt + "\n"
         self.memory.add("system", system_prompt)
 
     def run(self, task: str, image_data: str = None) -> str:
@@ -80,8 +88,12 @@ class TinyAgent:
     def _step(self) -> str:
         """Perform a single step."""
         # THOUGHT: Generate response and add to memory
-        response = self.llm.generate(self.memory.get_messages(), tools=self.tools.schemas)
-        self.memory.add("assistant", response.content, tool_call=response.tool_call)
+        response = self.llm.generate(
+            self.memory.get_messages(), tools=self.tools.schemas
+        )
+        self.memory.add(
+            "assistant", response.content, tool_call=response.tool_call
+        )
         self.display("response", response)
 
         # Tool parsing
@@ -149,7 +161,11 @@ def chat(agent):
 
 what_we_built = ChapterOverview(
     [
-        ("agent.py", "updated", "Added printing to the `Display` to see its intermediate steps."),
+        (
+            "agent.py",
+            "updated",
+            "Added printing to the `Display` to see its intermediate steps.",
+        ),
         (
             "display.py",
             "new",
@@ -160,13 +176,19 @@ what_we_built = ChapterOverview(
         ("planning.py", None, ""),
         ("skills.py", None, ""),
         ("toolbox.py", "updated", "Added tools for Coding Agents."),
-        ("tools.py", "updated", "Added XML-based tool parsing and calling with human-in-the-loop checks."),
+        (
+            "tools.py",
+            "updated",
+            "Added XML-based tool parsing and calling with human-in-the-loop checks.",
+        ),
         ("trajectory.py", None, ""),
     ]
 )
 
 
-tinyagents_diff = DiffViewer(ch9.TinyAgent, TinyAgent, "ch9.TinyAgent", "ch11.TinyAgent")
+tinyagents_diff = DiffViewer(
+    ch9.TinyAgent, TinyAgent, "ch9.TinyAgent", "ch11.TinyAgent"
+)
 
 
 display_annotated = CodeAnnotator(

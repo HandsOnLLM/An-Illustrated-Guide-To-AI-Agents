@@ -2,28 +2,23 @@ from illustrated_agents.llm import LLM, Response
 from illustrated_agents.memory import Memory
 from illustrated_agents.planning import ReAct
 from illustrated_agents.tools import Tools
-from illustrated_agents.skills import Skills
 from illustrated_agents.display import Display
 
 
 class TinyAgent:
     """A minimal, modular, and educational agent framework."""
 
-    def __init__(
-        self, llm: LLM, memory: Memory, tools: Tools, planner: ReAct, skills: Skills, display=Display
-    ):
+    def __init__(self, llm: LLM, memory: Memory, tools: Tools, planner: ReAct, display=Display):
         self.llm = llm
         self.memory = memory
         self.tools = tools
         self.planner = planner
-        self.skills = skills
         self.display = display
 
         # Build system prompt with all components
         system_prompt = "You are a helpful AI agent.\n\n"
         system_prompt += self.planner.prompt + "\n\n"
         system_prompt += self.tools.prompt
-        system_prompt += self.skills.prompt
         self.memory.add("system", system_prompt)
 
     def run(self, task: str, image_data: str = None) -> str:

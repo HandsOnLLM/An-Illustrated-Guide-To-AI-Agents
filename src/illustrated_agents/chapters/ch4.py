@@ -14,7 +14,11 @@ class EmbeddingModel:
 
     def embed(self, text: str) -> list[float]:
         """Convert text into a numerical vector."""
-        return self.client.embeddings.create(model=self.model, input=text).data[0].embedding
+        return (
+            self.client.embeddings.create(model=self.model, input=text)
+            .data[0]
+            .embedding
+        )
 
 
 class Memory:
@@ -23,7 +27,7 @@ class Memory:
     def __init__(self):
         self.messages = []
 
-    def add(self, role: str, content: str, tool_call: dict = None):
+    def add(self, role: str, content: str, tool_call: dict | None = None) -> None:
         """Add a message to memory."""
         message = {"role": role, "content": content}
 
@@ -42,13 +46,17 @@ class Memory:
 class TrimmingMemory(Memory):
     """Memory that keeps only the last two user/assistant turns."""
 
-    def add(self, role: str, content: str):
+    def add(self, role: str, content: str) -> None:
         # Add the new message first using the parent class (Memory)
         super().add(role, content)
 
         # Then, keep system message plus the most recent two turns (4 messages)
-        system = [message for message in self.messages if message["role"] == "system"]
-        turns = [message for message in self.messages if message["role"] != "system"]
+        system = [
+            message for message in self.messages if message["role"] == "system"
+        ]
+        turns = [
+            message for message in self.messages if message["role"] != "system"
+        ]
         self.messages = system + turns[-4:]
 
 
@@ -59,7 +67,7 @@ class SummarizationMemory(Memory):
         super().__init__()
         self.llm = llm
 
-    def add(self, role: str, content: str):
+    def add(self, role: str, content: str) -> None:
         # Add the new message first using the parent class (Memory)
         super().add(role, content)
 
@@ -95,7 +103,7 @@ class LongTermMemory(Memory):
         self.documents = documents
         self.embeddings = [embedding_model.embed(doc) for doc in documents]
 
-    def add(self, role: str, content: str):
+    def add(self, role: str, content: str) -> None:
         # Augment user queries with retrieved context before storing
         if role == "user":
             context = "\n".join(self.search(content))
@@ -126,7 +134,6 @@ class TinyAgent:
         self.memory = memory
         self.tools = None  # Chapter 5: Add Tools
         self.planner = None  # Chapter 6: Add Planning
-        self.skills = None  # Chapter 6: Add Skills
 
         self.trajectory = Trajectory()
 
@@ -188,4 +195,6 @@ memory_annotated = CodeAnnotator(
     },
 )
 
-tinyagents_diff = DiffViewer(ch2.TinyAgent, TinyAgent, "ch2.TinyAgent", "ch4.TinyAgent")
+tinyagents_diff = DiffViewer(
+    ch2.TinyAgent, TinyAgent, "ch2.TinyAgent", "ch4.TinyAgent"
+)

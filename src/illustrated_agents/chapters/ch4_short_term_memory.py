@@ -11,8 +11,12 @@ class TrimmingMemory(Memory):
         super().add(role, content)
 
         # Then, keep system message plus the most recent two turns (4 messages)
-        system = [message for message in self.messages if message["role"] == "system"]
-        turns = [message for message in self.messages if message["role"] != "system"]
+        system = [
+            message for message in self.messages if message["role"] == "system"
+        ]
+        turns = [
+            message for message in self.messages if message["role"] != "system"
+        ]
         self.messages = system + turns[-4:]
 
 
@@ -54,7 +58,11 @@ what_we_built = ChapterOverview(
     [
         ("agent.py", None, ""),
         ("llm.py", None, ""),
-        ("memory.py", "updated", "Add `TrimmingMemory` and `SummarizationMemory`."),
+        (
+            "memory.py",
+            "updated",
+            "Add `TrimmingMemory` and `SummarizationMemory`.",
+        ),
         ("trajectory.py", None, ""),
     ]
 )

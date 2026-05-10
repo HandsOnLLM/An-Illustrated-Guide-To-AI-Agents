@@ -2,6 +2,7 @@ import json
 import inspect
 import sys
 import asyncio
+import yaml
 
 from pathlib import Path
 from typing import Callable
@@ -222,3 +223,44 @@ class NativeTools(Tools):
     def is_done(self, response: Response) -> bool:
         """No tool call means the `TinyAgent` is done."""
         return not response.tool_call
+
+
+class Skills(NativeTools):
+    """A `Tools` and `Skills` registry
+
+    Skills are recipes. When you activate one, you get instructions
+    in return on how to approach a given task. Although it is not
+    a tool in the same way a calculator is one, we can still approach
+    it as such since the Agent has to decide when to activate it.
+
+    The skills are loaded progressively. As such, the name and description are
+    available in the system prompt, but the full instructions are only injected
+    when the agent **activates** a skill (uses it as a tool).
+    """
+
+    def add_skill(self, path: str):
+        """Load a SKILL.md file and register it as a callable tool."""
+        content = Path(path).read_text(encoding="utf-8")
+
+        # Split on YAML delimiters and extract the frontmatter and instructions
+        parts = content.split("---", 2)
+        frontmatter = yaml.safe_load(parts[1])
+        name = frontmatter["name"]
+        description = frontmatter["description"]
+        instructions = parts[2].strip()
+
+        # Register the skill
+        def skill(**kwargs):
+            return instructions
+
+        skill.__name__ = name
+        skill.__doc__ = f"A skill that when activated provides the following context: '{description}'"
+        skill.__signature__ = inspect.Signature()  # schema sees no params; lambda still tolerates any
+        self.add_tool(name, skill, skill.__doc__)
+
+    @property
+    def prompt(self):
+        return """You have specialized skills available. To use a skill,
+call it like a tool by referencing their name.
+
+The skill will provide detailed instructions for completing the task."""

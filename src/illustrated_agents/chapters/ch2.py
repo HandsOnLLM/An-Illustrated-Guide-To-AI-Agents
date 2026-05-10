@@ -24,7 +24,9 @@ class LLM:
         self.think = think
         self.kwargs = kwargs
 
-    def generate(self, messages: list[dict], tools: list = None) -> Response:
+    def generate(
+        self, messages: list[dict], tools: list | None = None
+    ) -> Response:
         """Generate a response from the LLM given a list of messages."""
         # Enable/Disable thinking
         if self.think:
@@ -46,6 +48,9 @@ class LLM:
 
         # Extract message, tool_call, and metadata
         message = response.choices[0].message
+        reasoning = getattr(message, "reasoning_content", None) or getattr(
+            message, "reasoning", None
+        )
         has_tool_call = hasattr(message, "tool_calls") and message.tool_calls
         tool_call = message.tool_calls[0].model_dump() if has_tool_call else None
         metadata = {
@@ -57,7 +62,7 @@ class LLM:
         # Format as Response dataclass
         return Response(
             content=message.content,
-            reasoning=getattr(message, "reasoning_content", None) or getattr(message, "reasoning", None),
+            reasoning=reasoning,
             tool_call=tool_call,
             metadata=metadata,
         )
@@ -110,7 +115,6 @@ class TinyAgent:
         self.memory = None  # Chapter 4: Add Memory
         self.tools = None  # Chapter 5: Add Tools
         self.planner = None  # Chapter 6: Add Planning
-        self.skills = None  # Chapter 6: Add Skills
 
         self.trajectory = Trajectory()
 
@@ -126,7 +130,7 @@ class TinyAgent:
         self.trajectory.add(response)
         return response.content
 
-    def _execute_action(self, action: str) -> str | None:
+    def _execute_action(self, action: str) -> str:
         """Execute a tool action."""
         # Placeholder - will be implemented in later chapters
         return f"Executed action: {action}"
@@ -162,14 +166,19 @@ llm_annotated = CodeAnnotator(
     LLM.generate,
     annotations={
         (
-            13,
-            19,
+            14,
+            21,
         ): "We call the 'completion' function with any additional keyword arguments which gives back the `response` object from the OpenAI API.",
         (
-            22,
-            29,
+            24,
+            28,
         ): "We then extract the content, reasoning, tool calls, and metadata from the response",
-        (32, 37): "Finally, we format this into our `Response` dataclass and return it.",
+        (
+            36,
+            44,
+        ): "Finally, we format this into our `Response` dataclass and return it.",
     },
 )
-tinyagents_diff = DiffViewer(ch1.TinyAgent, TinyAgent, "ch1.TinyAgent", "ch2.TinyAgent")
+tinyagents_diff = DiffViewer(
+    ch1.TinyAgent, TinyAgent, "ch1.TinyAgent", "ch2.TinyAgent"
+)
