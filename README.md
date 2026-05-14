@@ -41,7 +41,7 @@ All examples can be run in Google Colab for **free** using their T4 GPU. You hav
 | Chapter 4: Memory  | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](...)  |
 | Chapter 5: Tools  | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](...)  |
 | Chapter 6: Planning  | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](...)  |
-| Chapter 7: Evaluation | No code  |
+| Chapter 7: Evaluation | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](...)  |
 | Chapter 8: Multi-Agent Collaboration  | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](...)  |
 | Chapter 9: Multimodal Understanding  | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](...)  |
 | Chapter 10: Multimodal Generation  | No code  |

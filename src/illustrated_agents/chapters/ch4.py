@@ -167,6 +167,37 @@ what_we_built = ChapterOverview(
     ]
 )
 
+what_we_built_lt = ChapterOverview(
+    [
+        ("agent.py", None, ""),
+        (
+            "llm.py",
+            "updated",
+            "Add `EmbeddingModel` to support long-term memory.",
+        ),
+        (
+            "memory.py",
+            "updated",
+            "Add `LongTermMemory` to the TinyAgent in the form of RAG.",
+        ),
+        ("trajectory.py", None, ""),
+    ]
+)
+
+
+what_we_built_st = ChapterOverview(
+    [
+        ("agent.py", None, ""),
+        ("llm.py", None, ""),
+        (
+            "memory.py",
+            "updated",
+            "Add `TrimmingMemory` and `SummarizationMemory`.",
+        ),
+        ("trajectory.py", None, ""),
+    ]
+)
+
 
 tinyagent_annotated = CodeAnnotator(
     TinyAgent,
