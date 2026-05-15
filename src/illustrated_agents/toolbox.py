@@ -1,3 +1,4 @@
+import datetime
 import random
 import subprocess
 import sys
@@ -35,6 +36,16 @@ def subtract(a: str, b: str) -> float:
 def multiply(a: str, b: str) -> float:
     """Multiply two numbers."""
     return float(a) * float(b)
+
+
+def today() -> str:
+    """Return today's date (YYYY-MM-DD)."""
+    return datetime.date.today().isoformat()
+
+
+def days_between(a: str, b: str) -> int:
+    """Days between two ISO dates."""
+    return (datetime.date.fromisoformat(b) - datetime.date.fromisoformat(a)).days
 
 
 # --- Code Tools (workspace-scoped) ---
