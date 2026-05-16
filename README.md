@@ -44,9 +44,8 @@ All examples can be run in Google Colab for **free** using their T4 GPU. You hav
 | Chapter 7: Evaluation | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](...)  |
 | Chapter 8: Multi-Agent Collaboration  | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](...)  |
 | Chapter 9: Multimodal Understanding  | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](...)  |
-| Chapter 10: Multimodal Generation  | No code  |
-| Chapter 11: Coding Agents  |  [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](...)  |
-| Chapter 12: Efficient Large Language Models  | No code  |
+| Chapter 10: Coding Agents  |  [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](...)  |
+
 
 > [!TIP]
 > You can check the [setup](.setup/) folder for a quick-start guide to install all packages locally.

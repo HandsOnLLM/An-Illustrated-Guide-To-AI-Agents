@@ -81,7 +81,7 @@ FLAMINGO_LOGO = f"""
       [bold {_FD}]                ▓▓▓▒▒▒▒▒▒▒▒[/]
       [bold {_FD}]                ▓▓▓▒▒▒▒▒▒▒▒▒[/]
       [bold {_FD}]                ▓▓▓▒▒▒▒▒▓▓▓▓[/]
-{NAME}"""  # https://www.asciiart.eu/image-to-ascii -- Flamingo in Ch12 -- Manually edited
+{NAME}"""  # https://www.asciiart.eu/image-to-ascii -- Flamingo in Ch10 -- Manually edited
 
 
 def label(name: str, style: str) -> str:
@@ -151,7 +151,9 @@ class Display:
         # Animate "thinking"
         if event == "thinking":
             self._animating = True
-            self._live = Live(console=console, refresh_per_second=8, transient=True)
+            self._live = Live(
+                console=console, refresh_per_second=8, transient=True
+            )
             self._live.start()
             self._thinking_msg = random.choice(
                 FLAMINGO_THINKING_MESSAGES if self._pink else THINKING_MESSAGES
@@ -161,13 +163,17 @@ class Display:
         # Print THOUGHT (handles both text responses and native reasoning)
         elif event == "response":
             self._stop_thinking()
-            console.print(f"  [bold dark_orange]{'THOUGHT':<13}[/][dim italic]{data.reasoning}[/]")
+            console.print(
+                f"  [bold dark_orange]{'THOUGHT':<13}[/][dim italic]{data.reasoning}[/]"
+            )
 
         # Print ACTION
         elif event == "tool_call" and data:
             tool = data.tool_call["tool"]
             kwargs = data.tool_call["kwargs"]
-            console.print(f"  {label('ACTION', 'yellow')}[yellow]{tool}({kwargs})[/]")
+            console.print(
+                f"  {label('ACTION', 'yellow')}[yellow]{tool}({kwargs})[/]"
+            )
 
         # Print OBSERVATION
         elif event == "observation":
@@ -179,7 +185,9 @@ class Display:
         i = 0
         while self._animating and self._live:
             frame = THINKING_FRAMES[i % len(THINKING_FRAMES)]
-            self._live.update(Text(f"  {self._thinking_msg}  {frame}", style="dark_orange"))
+            self._live.update(
+                Text(f"  {self._thinking_msg}  {frame}", style="dark_orange")
+            )
             time.sleep(0.15)
             i += 1
 

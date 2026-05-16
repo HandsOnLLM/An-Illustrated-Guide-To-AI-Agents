@@ -418,7 +418,7 @@ execute_tool_annotated = CodeAnnotator(
         (
             11,
             14,
-        ): "If the tool requires approval, we ask the user for confirmation before executing it. More on this in Chapter 11.",
+        ): "If the tool requires approval, we ask the user for confirmation before executing it. More on this in Chapter 10.",
         (
             17,
             19,

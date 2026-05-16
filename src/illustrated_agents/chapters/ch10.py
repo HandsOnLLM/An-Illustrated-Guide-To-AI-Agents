@@ -187,7 +187,7 @@ what_we_built = ChapterOverview(
 
 
 tinyagents_diff = DiffViewer(
-    ch9.TinyAgent, TinyAgent, "ch9.TinyAgent", "ch11.TinyAgent"
+    ch9.TinyAgent, TinyAgent, "ch9.TinyAgent", "ch10.TinyAgent"
 )
 
 
