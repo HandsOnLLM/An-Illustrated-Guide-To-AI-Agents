@@ -7,11 +7,9 @@ Welcome! In this repository you will find the code for the book [An Illustrated 
 
 <p align="center"><b><i>"Build an Agent From Scratch!"</i></b></p>
 
-You will build your own Agentic Framework from the ground up using nothing more than lightweight dependencies: 
+You will build your own Agentic Framework from the ground up in **pure Python**!
 
-> `openai` (LLMs), `MCP`, `Rich` (cli!) `pygments` (for nice styling 😉)
-
-Through the visually educational nature of this book and with **more than 450 custom made figures**, learn the practical tools and concepts you need to use AI Agents today!
+Through the visually educational nature of this book and with **more than 300 custom made figures**, learn the practical tools and concepts you need to use AI Agents today!
 
 <a href=""><img src="https://learning.oreilly.com/covers/urn:orm:book:9798341662681/400w/" width="50%" ></a>
 

@@ -18,10 +18,8 @@ dependencies = []
 illustrated-agents = { workspace = true }
 
 [project.optional-dependencies]
-pretty = ["rich>=14.3.2"]
-mcp = ["mcp>=1.26.0"]
-openai = ["openai>=2.0.0"]
-book = [
+terminal = ["rich>=14.3.2"]
+jupyter = [
     "jupyterlab>=4.1.5",
     "ipywidgets>=8.1.8",
     "pygments>=2.19.2",
@@ -29,9 +27,7 @@ book = [
     "openai>=2.0.0",
     "mcp>=1.26.0",
 ]
-
-# Kitchen sink
-all = ["illustrated-agents[book]"]
+all = ["illustrated-agents[jupyter]"]
 
 [project.scripts]
 tinyagent = "illustrated_agents.cli:main"

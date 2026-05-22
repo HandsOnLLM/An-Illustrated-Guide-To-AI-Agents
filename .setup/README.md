@@ -1,6 +1,6 @@
-Throughout this book, we are iteratively going to build up our `TinyAgent` using each chapter as a theoretical background for understanding why these particular components are needed and what they can do. This time around, we decided that we wanted to separate the code from the theory a bit more so that we can have more flexibility regarding the code and potential updates that we might do in the upcoming months/years. 
+Throughout this book, we are iteratively going to build up our `TinyAgent` using each chapter as a theoretical background for understanding why these particular components are needed and what they can do. This time around, we decided to explore this hands-on approach through **pure Python**! 
 
-That said, the `TinyAgent` that we will be building throughout this book requires a very minimal set of dependencies. All we want to do is call an LLM and build up our Agent using that. Therefore, we decided on using the popular `openai`-endpoint for interacting with LLMs. This allows you to use any local or cloud model!
+We assume that you have an LLM running on an OpenAI-compatible endpoint that you can query. Other than that, everything will be build using nothing more than Python. We also make sure to add examples that do make use of dependencies (like MCP) but these are completely optional and are considered bonus content!
 
 
 # Setting up your environment
@@ -12,10 +12,11 @@ There are various methods for setting up your environment (uncomment the one tha
 If you already have a Python environment (with Python 3.9 or newer), you can install the dependencies with:
 
 ```bash
-pip install illustrated-agents
-
-# If you plan on using Jupyter notebooks
+# If you follow the notebook tutorials
 pip install illustrated-agents[jupyter]
+
+# The TinyAgent (in the cli) can be installed with
+pip install illustrated-agents
 ```
 
 You can also install the package directly using:
@@ -29,19 +30,21 @@ pip install git+https://github.com/HandsOnLLM/Illustrated-Agents.git
 Our preferred method for creating and managing environments is [`uv`](https://github.com/astral-sh/uv) which can be [installed like so](https://docs.astral.sh/uv/getting-started/installation/). Usage is straightforward:
 
 ```bash
-uv add illustrated-agents
-
-# If you plan on using Jupyter notebooks
+# If you follow the notebook tutorials
 uv add illustrated-agents --extra jupyter
+
+# The TinyAgent (in the cli) can be installed with
+uv add illustrated-agents
 ```
 
 or if you cloned the repo:
 
 ```bash
-uv sync
-
-# If you plan on using Jupyter notebooks
+# If you follow the notebook tutorials
 uv sync --extra jupyter
+
+# The TinyAgent (in the cli) can be installed with
+uv sync
 ```
 
 # Chapters
@@ -50,7 +53,6 @@ Each chapter can be run with the following options:
 
 * `Google Colab` -- This is a cloud environment which simplifies setup significantly
 * `Jupyter Lab` -- A local coding environment using notebooks
-* `Terminal` -- For running a full example
 
 ### Google Colab
 
@@ -67,17 +69,3 @@ uv run jupyter lab
 # Using python directly
 jupyter lab
 ```
-
-### **Terminal**
-
-To run an example in a given chapter, you only need to run:
-
-```bash
-# For `uv`
-uv run chapter03/example.py
-
-# Directly from python
-python chapter03/example.py
-```
-
-**NOTE**: In the `.py` examples, we assume you have `Ollama` running and downloaded Gemma 4 with `ollama pull gemma4:e4b`!
