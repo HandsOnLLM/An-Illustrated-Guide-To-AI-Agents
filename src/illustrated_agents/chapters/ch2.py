@@ -78,26 +78,6 @@ class LLM:
         )
 
 
-[
-    {
-        "query": "What is 2 + 2?",
-        "steps": [
-            Step(
-                thought="",
-                action=None,
-                observation=None,
-                answer="2 + 2 is 4.",
-                metadata={
-                    "model": "gemma4:e4b",
-                    "prompt_tokens": 17,
-                    "completion_tokens": 9,
-                },
-            )
-        ],
-    }
-]
-
-
 @dataclass
 class Step:
     """A single step in an agent's trajectory."""
