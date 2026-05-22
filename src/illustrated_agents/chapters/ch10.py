@@ -56,7 +56,7 @@ class TinyAgent:
         memory: Memory,
         tools: Tools,
         planner: ReAct,
-        display=Display,
+        display: Display,
     ):
         self.llm = llm
         self.memory = memory
@@ -67,9 +67,9 @@ class TinyAgent:
         self.trajectory = Trajectory()
 
         # Build system prompt with all components
-        system_prompt = "You are a helpful assistant.\n"
-        system_prompt += self.planner.prompt + "\n"
-        system_prompt += self.tools.prompt + "\n"
+        system_prompt = "You are a helpful assistant.\n\n"
+        system_prompt += self.planner.prompt
+        system_prompt += self.tools.prompt
         self.memory.add("system", system_prompt)
 
     def run(self, task: str, image_data: str = None) -> str:
@@ -77,7 +77,7 @@ class TinyAgent:
         self.memory.add("user", task, image_data=image_data)
         self.trajectory.initialize(task)
 
-        # `Autonomy` loop
+        # *Autonomy* loop
         for step in range(self.planner.max_steps):
             result = self._step()
             if result is not None:
@@ -85,7 +85,7 @@ class TinyAgent:
 
         return "Max steps reached without completion."
 
-    def _step(self) -> str:
+    def _step(self) -> str | None:
         """Perform a single step."""
         # THOUGHT: Generate response and add to memory
         response = self.llm.generate(
@@ -97,6 +97,7 @@ class TinyAgent:
         self.display("response", response)
 
         # Tool parsing
+        response = self.planner.parse(response)
         response = self.tools.parse(response)
 
         # ANSWER: Stopping mechanism

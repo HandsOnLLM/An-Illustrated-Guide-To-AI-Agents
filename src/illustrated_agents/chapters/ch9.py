@@ -34,6 +34,8 @@ class TinyAgent:
             if result is not None:
                 return result
 
+        return "Max steps reached without completion."
+
     def _step(self) -> str | None:
         """Perform a single step."""
         # THOUGHT: Generate response and add to memory
@@ -82,13 +84,13 @@ class MultimodalMemory(Memory):
         """Add a message to memory."""
         # Image
         if image_data:
+            is_url = image_data.startswith(("http://", "https://"))
+            url = image_data if is_url else f"data:image/jpeg;base64,{image_data}"
             content = [
-                {
-                    "type": "image_url",
-                    "image_url": {"url": f"data:image/jpeg;base64,{image_data}"},
-                },
+                {"type": "image_url", "image_url": {"url": url}},
                 {"type": "text", "text": content},
             ]
+
         # Main message
         message = {"role": role, "content": content}
 
@@ -115,6 +117,7 @@ what_we_built = ChapterOverview(
             "updated",
             "Allow the agent to process images in addition to text.",
         ),
+        ("evaluator.py", None, ""),
         ("llm.py", None, ""),
         (
             "memory.py",
@@ -122,7 +125,6 @@ what_we_built = ChapterOverview(
             "Track images in the conversation history for the Agent to access.",
         ),
         ("planning.py", None, ""),
-        ("skills.py", None, ""),
         ("toolbox.py", None, ""),
         ("tools.py", None, ""),
         ("trajectory.py", None, ""),

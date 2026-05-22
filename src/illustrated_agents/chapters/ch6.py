@@ -194,6 +194,8 @@ class TinyAgent:
             if result is not None:
                 return result
 
+        return "Max steps reached without completion."
+
     def _step(self) -> str | None:
         """Perform a single step."""
         # THOUGHT: Generate response and add to memory
