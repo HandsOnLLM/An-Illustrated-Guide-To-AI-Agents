@@ -3,9 +3,9 @@
 <a href="https://www.linkedin.com/in/mgrootendorst/"><img src="https://img.shields.io/badge/Follow%20Maarten-blue.svg?logo=linkedin"></a>
 <a href="https://www.linkedin.com/in/jalammar/"><img src="https://img.shields.io/badge/Follow%20Jay-blue.svg?logo=linkedin"></a>
 
-Welcome! In this repository you will find the code for the book [An Illustrated Guide to AI Agents](https://www.amazon.com/Hands-Large-Language-Models-Understanding/dp/1098150961) written by [Maarten Grootendorst](https://www.linkedin.com/in/mgrootendorst/) and [Jay Alammar](https://www.linkedin.com/in/jalammar/). In this repository, you will:<br> 
+Welcome! Here, you will find the code for the book [An Illustrated Guide to AI Agents](https://www.amazon.com/Hands-Large-Language-Models-Understanding/dp/1098150961) written by [Maarten Grootendorst](https://www.linkedin.com/in/mgrootendorst/) and [Jay Alammar](https://www.linkedin.com/in/jalammar/). In this repository, you will:<br> 
 
-<p align="center"><b><i>"Build an Agent From Scratch!"</i></b> -- In pure Python!</p>
+<p align="center"><b><i>"Build an Agent From Scratch!"</i></b></p>
 
 You will build your own Agentic Framework from the ground up in **pure Python**!
 

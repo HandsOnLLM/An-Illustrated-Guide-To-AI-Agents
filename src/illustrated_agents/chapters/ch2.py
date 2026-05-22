@@ -24,14 +24,12 @@ class LLM:
         base_url: str = "http://localhost:11434/v1",
         api_key: str = "no_key",
         think: bool = False,
-        **kwargs,
     ):
         """Initialize the LLM with the given model."""
         self.model = model
         self.base_url = base_url
         self.api_key = api_key
         self.think = think
-        self.kwargs = kwargs
 
     def generate(
         self, messages: list[dict], tools: list | None = None
@@ -41,12 +39,11 @@ class LLM:
         body = {
             "model": self.model,
             "messages": messages,
-            **self.kwargs,
         }
+
+        # Tools and Reasoning
         if tools:
             body["tools"] = tools
-
-        # Enable/Disable thinking
         if not self.think:
             body["reasoning_effort"] = "none"
 
@@ -79,6 +76,26 @@ class LLM:
             tool_call=tool_call,
             metadata=metadata,
         )
+
+
+[
+    {
+        "query": "What is 2 + 2?",
+        "steps": [
+            Step(
+                thought="",
+                action=None,
+                observation=None,
+                answer="2 + 2 is 4.",
+                metadata={
+                    "model": "gemma4:e4b",
+                    "prompt_tokens": 17,
+                    "completion_tokens": 9,
+                },
+            )
+        ],
+    }
+]
 
 
 @dataclass

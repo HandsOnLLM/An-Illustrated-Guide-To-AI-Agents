@@ -20,14 +20,12 @@ class LLM:
         base_url: str = "http://localhost:11434/v1",
         api_key: str = "no_key",
         think: bool = False,
-        **kwargs,
     ):
         """Initialize the LLM with the given model."""
         self.model = model
         self.base_url = base_url
         self.api_key = api_key
         self.think = think
-        self.kwargs = kwargs
 
     def generate(
         self, messages: list[dict], tools: list | None = None
@@ -37,12 +35,11 @@ class LLM:
         body = {
             "model": self.model,
             "messages": messages,
-            **self.kwargs,
         }
+
+        # Tools and Reasoning
         if tools:
             body["tools"] = tools
-
-        # Enable/Disable thinking
         if not self.think:
             body["reasoning_effort"] = "none"
 

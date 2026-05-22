@@ -34,7 +34,6 @@ tools.add_tool("my_tool", my_tool)
 # Add Skill
 tools.add_skill(path_to_my_skill.md)
 
-
 # Create agent
 agent = TinyAgent(
     llm=llm, 
