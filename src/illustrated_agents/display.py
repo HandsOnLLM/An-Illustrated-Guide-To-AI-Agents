@@ -2,19 +2,38 @@ import random
 import time
 import threading
 
-from rich.console import Console
-from rich.live import Live
-from rich.text import Text
-from rich.rule import Rule
-
 from illustrated_agents.llm import Response
 
-console = Console()
+
+# --- ANSI escape codes (used by the pure-Python Display) ---
+BOLD = "\033[1m"
+DIM = "\033[2m"
+ITALIC = "\033[3m"
+RESET = "\033[0m"
+ORANGE = "\033[38;5;208m"
+CYAN = "\033[36m"
+YELLOW = "\033[33m"
+GREEN = "\033[32m"
+RED = "\033[31m"
+PURPLE = "\033[35m"
+
+
+# --- Optional rich imports (used by RichDisplay) ---
+try:
+    from rich.console import Console
+    from rich.live import Live
+    from rich.text import Text
+    from rich.rule import Rule
+
+    console = Console()
+except ImportError:
+    Console = Live = Text = Rule = console = None
+
 
 NAME = """
-██████ ██ ███  ██ ██  ██   ▄████▄  ▄████  ██████ ███  ██ ██████ 
-  ██   ██ ██ ▀▄██  ▀██▀    ██▄▄██ ██  ▄▄▄ ██▄▄   ██ ▀▄██   ██   
-  ██   ██ ██   ██   ██     ██  ██  ▀███▀  ██▄▄▄▄ ██   ██   ██    
+██████ ██ ███  ██ ██  ██   ▄████▄  ▄████  ██████ ███  ██ ██████
+  ██   ██ ██ ▀▄██  ▀██▀    ██▄▄██ ██  ▄▄▄ ██▄▄   ██ ▀▄██   ██
+  ██   ██ ██   ██   ██     ██  ██  ▀███▀  ██▄▄▄▄ ██   ██   ██
 """  # ANSI Compact
 # Dolphin color palette
 _DK = "#3a5068"  # dark (back, fin, tail)
@@ -85,7 +104,7 @@ FLAMINGO_LOGO = f"""
 
 
 def label(name: str, style: str) -> str:
-    """Format a fixed-width label for step output."""
+    """Format a fixed-width label for step output. (Rich markup)"""
     return f"[bold {style}]{name:<13}[/]"
 
 
@@ -139,9 +158,48 @@ FLAMINGO_THINKING_MESSAGES = [
 
 
 class Display:
-    """Handles agent events with Rich formatting."""
+    """Handles agent events with ANSI-styled terminal output."""
 
     def __init__(self, pink=False):
+        self._pink = pink
+
+    def __call__(self, event: str, data: str | Response = None) -> None:
+
+        # "Thinking" line
+        if event == "thinking":
+            print(f"  {DIM}Thinking...\n{RESET}")
+
+        # Print THOUGHT
+        elif event == "response":
+            print(f"{BOLD}{GREEN}{'▒▒ THOUGHT ▒▒':<13}{RESET}")
+            print(f"{data.reasoning}{RESET}\n")
+            if data.content:
+                print(f"{BOLD}{PURPLE}{'▒▒ ANSWER ▒▒':<13}{RESET}")
+                print(f"{data.content}{RESET}\n")
+
+        # Print ACTION
+        elif event == "tool_call" and data:
+            tool = data.tool_call["tool"]
+            kwargs = data.tool_call["kwargs"]
+            print(f"{BOLD}{RED}{'▒▒ ACTION ▒▒':<13}{RESET}")
+            print(f"{tool}({kwargs}){RESET}\n")
+
+        # Print OBSERVATION
+        elif event == "observation":
+            print(f"{BOLD}{YELLOW}{'▒▒ OBSERVATION ▒▒':<13}{RESET}")
+            print(f"{data}{RESET}\n")
+            print(f"{DIM}{'─' * 80}{RESET}\n")
+
+
+class RichDisplay:
+    """Handles agent events with Rich formatting. Requires `pip install rich`."""
+
+    def __init__(self, pink=False):
+        if Console is None:
+            raise ImportError(
+                "RichDisplay requires `rich`. "
+                "Install with: pip install 'illustrated-agents[pretty]'"
+            )
         self._live = None
         self._animating = False
         self._pink = pink
@@ -165,6 +223,11 @@ class Display:
             self._stop_thinking()
             console.print(
                 f"  [bold dark_orange]{'THOUGHT':<13}[/][dim italic]{data.reasoning}[/]"
+            )
+            console.print(
+                f"\n  :flamingo: [bold magenta]ANSWER[/]    {data.content}\n"
+                if self._pink
+                else f"\n  :dolphin: [bold cyan]ANSWER[/]    {data.content}\n"
             )
 
         # Print ACTION

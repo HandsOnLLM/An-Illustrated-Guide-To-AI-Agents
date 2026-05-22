@@ -1,7 +1,3 @@
-from rich.console import Console
-from rich.rule import Rule
-
-
 from illustrated_agents.chapters.ch2 import LLM, Response, Trajectory
 from illustrated_agents.chapters.ch4 import Memory
 from illustrated_agents.chapters.ch5 import Tools
@@ -11,40 +7,51 @@ from illustrated_agents.utils import CodeAnnotator, DiffViewer, ChapterOverview
 from illustrated_agents.chapters import ch9
 
 
-console = Console()
+BOLD = "\033[1m"
+DIM = "\033[2m"
+ITALIC = "\033[3m"
+RESET = "\033[0m"
+YELLOW = "\033[33m"
+GREEN = "\033[32m"
+RED = "\033[91m"
+PURPLE = "\033[1;95m"
 
 
 class Display:
-    """Handles agent events with Rich formatting."""
+    """Handles agent events with ANSI-styled terminal output."""
 
     def __call__(self, event: str, data: str | Response = None) -> None:
-        # Animate "thinking"
+
+        # "Thinking" line (static, with a random message)
         if event == "thinking":
-            console.print("  [dim]Thinking...[/]")
+            print(f"  {DIM}Thinking...{RESET}")
 
         # Print THOUGHT
         elif event == "response":
-            console.print(
-                f"  [bold dark_orange]{'THOUGHT':<13}[/][dim italic]{data.reasoning}[/]"
+            print(
+                f"  {BOLD}{GREEN}{'THOUGHT':<13}{RESET}"
+                f"{DIM}{ITALIC}{GREEN}{data.reasoning}{RESET}"
             )
-
             if data.content:
-                console.print(
-                    f"  [bold cyan]{'ANSWER':<13}[/][dim italic]{data.content}[/]"
+                print(
+                    f"  {BOLD}{PURPLE}{'ANSWER':<13}{RESET}"
+                    f"{DIM}{PURPLE}{ITALIC}{data.content}{RESET}"
                 )
 
         # Print ACTION
-        elif event == "tool_call" and data.tool_call:
+        elif event == "tool_call" and data:
             tool = data.tool_call["tool"]
             kwargs = data.tool_call["kwargs"]
-            console.print(
-                f"  [bold yellow]{'ACTION':<13}[/][yellow]{tool}({kwargs})[/]"
+            print(
+                f"  {BOLD}{RED}{'ACTION':<13}{RESET}{RED}{tool}({kwargs}){RESET}"
             )
 
         # Print OBSERVATION
         elif event == "observation":
-            console.print(f"  [bold green]{'OBSERVATION':<13}[/]{data}")
-            console.print(Rule(style="dim"), end="\n\n")
+            print(
+                f"  {BOLD}{YELLOW}{'OBSERVATION':<13}{RESET}{YELLOW}{data}{RESET}\n"
+            )
+            print(f"{DIM}{'─' * 80}{RESET}\n")
 
 
 class TinyAgent:
@@ -121,43 +128,6 @@ class TinyAgent:
         self.display("observation", observation)
 
         return None
-
-
-def chat(agent):
-    """Interactive chat loop — works in both terminal and Jupyter."""
-    display = agent.display
-
-    # Agent Overview
-    console.print(f"\n  [dim]Tools:[/]  {', '.join(agent.tools.registry.keys())}")
-    console.print("  [dim]Type[/] exit [dim]to quit.[/]\n")
-
-    while True:
-        # User input
-        try:
-            query = input("> ").strip()
-        except (KeyboardInterrupt, EOFError):
-            console.print("  [dim]Goodbye![/]")
-            break
-
-        # Skip empty input
-        if not query:
-            continue
-
-        console.print(f"  [bold]> [/]{query}\n")
-
-        # Exit commands
-        if query.lower() in ("exit", "quit"):
-            console.print("  [dim]Goodbye![/]")
-            break
-
-        # Run agent
-        try:
-            result = agent.run(query)
-            display.stop()
-            console.print(f"\n  [bold cyan]{'ANSWER':<13}[/]{result}\n")
-        except Exception as e:
-            display.stop()
-            console.print(f"  [bold red]{'ERROR':<13}[/][red]{e}[/]\n")
 
 
 what_we_built = ChapterOverview(

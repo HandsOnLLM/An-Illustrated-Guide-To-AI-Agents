@@ -1,18 +1,10 @@
 import json
 import inspect
-import sys
-import asyncio
-import yaml
 
 from pathlib import Path
 from typing import Callable
-from mcp import ClientSession, StdioServerParameters
-from mcp.client.stdio import stdio_client
 
-import illustrated_agents
 from illustrated_agents.llm import Response
-
-SERVER_PATH = str(Path(illustrated_agents.__file__).parent / "chapters" / "ch5_mcp_server.py")
 
 
 # Convert specific types to string descriptions
@@ -23,7 +15,7 @@ def tool_to_schema(function) -> dict:
     """Convert a Python function to an OpenAI-style tool schema."""
     signature = inspect.signature(function)
 
-    # Extract meatadata
+    # Extract metadata
     properties, required = {}, []
     for name, parameter in signature.parameters.items():
         properties[name] = {"type": TYPE_MAP.get(parameter.annotation, "string")}
@@ -41,6 +33,16 @@ def tool_to_schema(function) -> dict:
     }
 
     return schema
+
+
+def _parse_frontmatter(text: str) -> dict:
+    """Parse simple `key: value` YAML frontmatter without external deps."""
+    result = {}
+    for line in text.strip().splitlines():
+        if ":" in line:
+            key, value = line.split(":", 1)
+            result[key.strip()] = value.strip()
+    return result
 
 
 class Tools:
@@ -136,54 +138,6 @@ To use a tool, respond with JSON: {{"tool": "name", "kwargs": {{"param": "value"
         return None
 
 
-class MCPTools(Tools):
-    """MCP-based tool registry that extends Tools."""
-
-    def __init__(self):
-        super().__init__()
-        self._load_mcp_tools()
-
-    def _get_server_params(self):
-        return StdioServerParameters(command=sys.executable, args=[SERVER_PATH])
-
-    def _load_mcp_tools(self):
-        """Fetch tools from MCP server and register them."""
-
-        # Fetch the list of tools from the MCP server
-        async def fetch():
-            async with stdio_client(self._get_server_params(), errlog=None) as (read, write):
-                async with ClientSession(read, write) as session:
-                    await session.initialize()
-                    tools = await session.list_tools()
-                    return tools.registry
-
-        mcp_tools = asyncio.run(fetch())
-
-        # Register each MCP tool using parent's add_tool
-        for tool in mcp_tools:
-            self.add_tool(
-                name=tool.name,
-                func=self._make_tool_caller(tool.name),
-                description=tool.description,
-            )
-
-    def _make_tool_caller(self, name: str):
-        """Create a callable that invokes the MCP tool."""
-
-        def caller(**kwargs):
-            return asyncio.run(self._call_tool(name, kwargs))
-
-        return caller
-
-    async def _call_tool(self, name: str, args: dict) -> str:
-        """Call a tool on the MCP server."""
-        async with stdio_client(self._get_server_params(), errlog=None) as (read, write):
-            async with ClientSession(read, write) as session:
-                await session.initialize()
-                result = await session.call_tool(name, args)
-                return result.content[0].text
-
-
 class NativeTools(Tools):
     """Tool registry using native function calling."""
 
@@ -244,7 +198,7 @@ class Skills(NativeTools):
 
         # Split on YAML delimiters and extract the frontmatter and instructions
         parts = content.split("---", 2)
-        frontmatter = yaml.safe_load(parts[1])
+        frontmatter = _parse_frontmatter(parts[1])
         name = frontmatter["name"]
         description = frontmatter["description"]
         instructions = parts[2].strip()

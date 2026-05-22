@@ -3,9 +3,6 @@ import random
 import subprocess
 import sys
 from pathlib import Path
-from pygments import highlight
-from pygments.lexers import PythonLexer
-from pygments.formatters import TerminalFormatter
 from illustrated_agents import Skills
 
 
@@ -144,11 +141,6 @@ def _build_code_tools(workspace: str = ".") -> dict:
         except subprocess.TimeoutExpired:
             return "Error: Code execution timed out (30s limit)."
 
-    def show_python(code: str):
-        """Print syntax-highlighted Python code."""
-        print(highlight(code, PythonLexer(), TerminalFormatter()))
-        return "Shown code with syntax highlighting."
-
     return {
         "read_file": (read_file, "Read a file: read_file(path: str)"),
         "read_lines": (
@@ -171,10 +163,6 @@ def _build_code_tools(workspace: str = ".") -> dict:
         "execute_python": (
             execute_python,
             "Run Python code: execute_python(code: str)",
-        ),
-        "show_python": (
-            show_python,
-            "Display Python code with syntax highlighting: show_python(code: str)",
         ),
     }
 
