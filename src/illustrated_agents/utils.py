@@ -4,13 +4,37 @@ import inspect
 import difflib
 import textwrap
 import uuid
-from pygments import highlight
-from pygments.lexers import DiffLexer, JsonLexer
-from pygments.formatters import HtmlFormatter
-from pygments.lexers import PythonLexer
-from rich.tree import Tree
-from rich.panel import Panel
-from rich.console import Console
+
+try:
+    from pygments import highlight
+    from pygments.lexers import DiffLexer, JsonLexer, PythonLexer
+    from pygments.formatters import HtmlFormatter
+    from rich.tree import Tree
+    from rich.panel import Panel
+    from rich.console import Console
+
+    HAS_NOTEBOOK_DEPS = True
+except ImportError:
+    HAS_NOTEBOOK_DEPS = False
+
+
+class Renderable:
+    """Base for display helpers used in notebook environments (Jupyter, Marimo, etc.).
+
+    Constructors are dependency-free; only rendering requires `rich` and `pygments`.
+    Subclasses override `_render_html`.
+    """
+
+    def _repr_html_(self):
+        if not HAS_NOTEBOOK_DEPS:
+            return (
+                f"<i>{type(self).__name__}: install `rich` and `pygments` "
+                f"to render this object.</i>"
+            )
+        return self._render_html()
+
+    def _render_html(self) -> str:
+        raise NotImplementedError
 
 
 def _get_source(source):
@@ -22,7 +46,7 @@ def _get_source(source):
     return textwrap.dedent(src)
 
 
-class DiffViewer:
+class DiffViewer(Renderable):
     """
     Show a GitHub-style, syntax-highlighted diff of two imported classes
     directly inside a Jupyter notebook cell.
@@ -35,7 +59,7 @@ class DiffViewer:
         self.new_name = new_name
         self.style = style
 
-    def _repr_html_(self):
+    def _render_html(self):
         # 1. Extract and normalize source
         old_src = _get_source(self.old_cls)
         new_src = _get_source(self.new_cls)
@@ -69,7 +93,7 @@ class DiffViewer:
 {html}"""
 
 
-class CodeAnnotator:
+class CodeAnnotator(Renderable):
     """
     Annotate Python source code with comments displayed alongside.
     """
@@ -88,7 +112,7 @@ class CodeAnnotator:
             (k, k) if isinstance(k, int) else tuple(k): v for k, v in (annotations or {}).items()
         }
 
-    def _repr_html_(self):
+    def _render_html(self):
         src = _get_source(self.source)
         hl_lines = [ln for start, end in self.annotations for ln in range(start, end + 1)]
 
@@ -138,6 +162,8 @@ class ChapterOverview:
         self.modules = modules
 
     def __repr__(self):
+        if not HAS_NOTEBOOK_DEPS:
+            return f"{type(self).__name__}: install `rich` to render."
         tree = Tree("[bold]TinyAgent[/]")
         max_len = max(len(m[0]) for m in self.modules)
 
@@ -155,7 +181,7 @@ class ChapterOverview:
         return ""
 
 
-class TrajectoryViewer:
+class TrajectoryViewer(Renderable):
     STYLE = """
     .trajectory details { margin: 6px 0; border: 1px solid #e4e4e7; border-radius: 6px; }
     .trajectory summary { cursor: pointer; padding: 8px 12px; font-weight: 500; background: #fafafa; }
@@ -199,7 +225,7 @@ class TrajectoryViewer:
         )
         return f"{query}<div class='steps'>{steps}</div>"
 
-    def _repr_html_(self):
+    def _render_html(self):
         pygments_css = HtmlFormatter().get_style_defs(".highlight")
         runs = "\n".join(
             self._render_run(run_index, run) for run_index, run in enumerate(self.trajectory.runs, start=1)
@@ -207,7 +233,7 @@ class TrajectoryViewer:
         return f"<style>{pygments_css}{self.STYLE}</style><div class='trajectory'>{runs}</div>"
 
 
-class Exercise:
+class Exercise(Renderable):
     """Collapsible exercise with hint and solution for Jupyter notebooks.
 
     Usage:
@@ -223,7 +249,7 @@ class Exercise:
         self.hint = hint
         self.solution = solution
 
-    def _repr_html_(self):
+    def _render_html(self):
         uid = f"ex-{uuid.uuid4().hex[:8]}"
         bg = "#0d1117"
 
@@ -255,7 +281,7 @@ class Exercise:
 </div>"""
 
 
-class ComparisonViewer:
+class ComparisonViewer(Renderable):
     """Side-by-side comparison of multiple implementations.
 
     Usage:
@@ -269,7 +295,7 @@ class ComparisonViewer:
         self.sources = sources  # [(label, source), ...]
         self.style = style
 
-    def _repr_html_(self):
+    def _render_html(self):
         uid = f"cv-{uuid.uuid4().hex[:8]}"
         fmt = HtmlFormatter(style=self.style, linenos="inline", cssclass=uid)
         bg = fmt.style.background_color
@@ -299,7 +325,7 @@ class ComparisonViewer:
 <div class="{uid}-wrap">{columns}</div>"""
 
 
-class EvolutionViewer:
+class EvolutionViewer(Renderable):
     """Show how a function/method evolves across chapters.
 
     New and changed lines are highlighted at each stage.
@@ -316,7 +342,7 @@ class EvolutionViewer:
         self.stages = stages  # [(label, source), ...]
         self.style = style
 
-    def _repr_html_(self):
+    def _render_html(self):
         uid = f"ev-{uuid.uuid4().hex[:8]}"
         bg = HtmlFormatter(style=self.style).style.background_color
         prev_lines = None

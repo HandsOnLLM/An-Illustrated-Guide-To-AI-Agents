@@ -7,15 +7,10 @@ class Memory:
     def __init__(self):
         self.messages = []
 
-    def add(self, role: str, content: str, tool_call: dict = None, image_data: str = None):
+    def add(
+        self, role: str, content: str, tool_call: dict | None = None, **kwargs
+    ) -> None:
         """Add a message to memory."""
-        # Image
-        if image_data:
-            content = [
-                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_data}"}},
-                {"type": "text", "text": content},
-            ]
-        # Main message
         message = {"role": role, "content": content}
 
         # Tool call
@@ -33,13 +28,17 @@ class Memory:
 class TrimmingMemory(Memory):
     """Memory that keeps only the last two user/assistant turns."""
 
-    def add(self, role: str, content: str):
+    def add(self, role: str, content: str, **kwargs) -> None:
         # Add the new message first using the parent class (Memory)
         super().add(role, content)
 
         # Then, keep system message plus the most recent two turns (4 messages)
-        system = [message for message in self.messages if message["role"] == "system"]
-        turns = [message for message in self.messages if message["role"] != "system"]
+        system = [
+            message for message in self.messages if message["role"] == "system"
+        ]
+        turns = [
+            message for message in self.messages if message["role"] != "system"
+        ]
         self.messages = system + turns[-4:]
 
 
@@ -50,9 +49,9 @@ class SummarizationMemory(Memory):
         super().__init__()
         self.llm = llm
 
-    def add(self, role: str, content: str):
+    def add(self, role: str, content: str, **kwargs) -> None:
         # Add the new message first using the parent class (Memory)
-        super().add(role, content)
+        super().add(role, content, **kwargs)
 
         # After each completed turn, update the running summary
         if role == "assistant":
@@ -77,7 +76,7 @@ Output the updated summary only."""
             self.messages = [{"role": "system", "content": response.content}]
 
 
-class RAGMemory(Memory):
+class LongTermMemory(Memory):
     """Memory enhanced with RAG: augments user queries with retrieved documents."""
 
     def __init__(self, embedding_model: EmbeddingModel, documents: list[str]):
@@ -86,7 +85,7 @@ class RAGMemory(Memory):
         self.documents = documents
         self.embeddings = [embedding_model.embed(doc) for doc in documents]
 
-    def add(self, role: str, content: str):
+    def add(self, role: str, content: str, **kwargs) -> None:
         # Augment user queries with retrieved context before storing
         if role == "user":
             context = "\n".join(self.search(content))
@@ -94,17 +93,66 @@ class RAGMemory(Memory):
 {context}
 
 Question: {content}"""
-        super().add(role, content)
+        super().add(role, content, **kwargs)
 
-    def search(self, query: str) -> list[str]:
+    def search(self, query: str, k: int = 3) -> list[str]:
         """Return the top-k documents most similar to the query."""
-        query_embed = self.embedding_model.embed(query)
-        scores = [self._cosine(query_embed, embed) for embed in self.embeddings]
+        query_embedding = self.embedding_model.embed(query)
+        scores = [self._cosine(query_embedding, emb) for emb in self.embeddings]
         ranked = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)
-        return [self.documents[index] for index in ranked[:3]]
+        return [self.documents[i] for i in ranked[:k]]
 
     def _cosine(self, a: list[float], b: list[float]) -> float:
-        """Calculate cosine similarity between two embeddings.."""
         dot = sum(x * y for x, y in zip(a, b))
         norm = (sum(x * x for x in a) ** 0.5) * (sum(x * x for x in b) ** 0.5)
         return dot / norm
+
+
+class MultimodalMemory(Memory):
+    """Simple memory module to store conversation history."""
+
+    def add(
+        self,
+        role: str,
+        content: str,
+        tool_call: dict = None,
+        image_data: str = None,
+    ):
+        """Add a message to memory."""
+        # Image
+        if image_data:
+            is_url = image_data.startswith(("http://", "https://"))
+            url = image_data if is_url else f"data:image/jpeg;base64,{image_data}"
+            content = [
+                {"type": "image_url", "image_url": {"url": url}},
+                {"type": "text", "text": content},
+            ]
+
+        # Main message
+        message = {"role": role, "content": content}
+
+        # Tool call
+        if tool_call:
+            message["tool_calls"] = [tool_call]
+
+        # Append message to memory
+        self.messages.append(message)
+
+
+class MultiModalMemory(Memory):
+    def add(
+        self,
+        role: str,
+        content: str,
+        tool_call: dict = None,
+        image_data: str = None,
+    ):
+        """Add a message to memory."""
+        if image_data:
+            is_url = image_data.startswith(("http://", "https://"))
+            url = image_data if is_url else f"data:image/jpeg;base64,{image_data}"
+            content = [
+                {"type": "image_url", "image_url": {"url": url}},
+                {"type": "text", "text": content},
+            ]
+        super().add(role, content, tool_call=tool_call)

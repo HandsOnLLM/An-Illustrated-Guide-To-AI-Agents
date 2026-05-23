@@ -2,20 +2,27 @@ import json
 import inspect
 
 from pathlib import Path
-from typing import Callable
+from typing import Any, Callable
 
 from illustrated_agents.llm import Response
 
 
 # Convert specific types to string descriptions
-TYPE_MAP = {str: "string", int: "integer", float: "number", bool: "boolean", list: "array", dict: "object"}
+TYPE_MAP = {
+    str: "string",
+    int: "integer",
+    float: "number",
+    bool: "boolean",
+    list: "array",
+    dict: "object",
+}
 
 
-def tool_to_schema(function) -> dict:
+def tool_to_schema(function: Callable) -> dict:
     """Convert a Python function to an OpenAI-style tool schema."""
     signature = inspect.signature(function)
 
-    # Extract metadata
+    # Extract meatadata
     properties, required = {}, []
     for name, parameter in signature.parameters.items():
         properties[name] = {"type": TYPE_MAP.get(parameter.annotation, "string")}
@@ -28,21 +35,15 @@ def tool_to_schema(function) -> dict:
         "function": {
             "name": function.__name__,
             "description": inspect.getdoc(function),
-            "parameters": {"type": "object", "properties": properties, "required": required},
+            "parameters": {
+                "type": "object",
+                "properties": properties,
+                "required": required,
+            },
         },
     }
 
     return schema
-
-
-def _parse_frontmatter(text: str) -> dict:
-    """Parse simple `key: value` YAML frontmatter without external deps."""
-    result = {}
-    for line in text.strip().splitlines():
-        if ":" in line:
-            key, value = line.split(":", 1)
-            result[key.strip()] = value.strip()
-    return result
 
 
 class Tools:
@@ -53,7 +54,7 @@ class Tools:
         self.registry = {}
         self.requires_approval = requires_approval
 
-    def add_tool(self, name: str, func: Callable, description: str = ""):
+    def add_tool(self, name: str, func: Callable, description: str = "") -> None:
         """Register a tool that the Agent can use.
 
         Arguments:
@@ -66,7 +67,10 @@ class Tools:
     @property
     def descriptions(self) -> str:
         """Get descriptions of all registered tools."""
-        return "\n".join(f"`{tool}`: {self.registry[tool]['description']}" for tool in self.registry)
+        return "\n".join(
+            f"`{tool}`: {self.registry[tool]['description']}"
+            for tool in self.registry
+        )
 
     @property
     def prompt(self) -> str:
@@ -97,7 +101,7 @@ To use a tool, respond with JSON: {{"tool": "name", "kwargs": {{"param": "value"
 
         return response
 
-    def execute(self, response: Response) -> any:
+    def execute(self, response: Response) -> Any:
         """Run a registered tool.
 
         Arguments:
@@ -119,7 +123,7 @@ To use a tool, respond with JSON: {{"tool": "name", "kwargs": {{"param": "value"
 
         return f"Tool '{name}' not found."
 
-    def observation(self, result):
+    def observation(self, result: str) -> tuple[str, str]:
         """Return the observation as a user."""
         return "user", f"OBSERVATION: {result}"
 
@@ -133,7 +137,7 @@ To use a tool, respond with JSON: {{"tool": "name", "kwargs": {{"param": "value"
         return False
 
     @property
-    def schemas(self):
+    def schemas(self) -> None:
         """Used only for native tool-calling."""
         return None
 
@@ -142,9 +146,11 @@ class NativeTools(Tools):
     """Tool registry using native function calling."""
 
     @property
-    def schemas(self) -> list:
+    def schemas(self) -> list[dict]:
         """Return tool functions for native function calling."""
-        return [tool_to_schema(tool["function"]) for tool in self.registry.values()]
+        return [
+            tool_to_schema(tool["function"]) for tool in self.registry.values()
+        ]
 
     @property
     def prompt(self) -> str:
@@ -161,7 +167,10 @@ class NativeTools(Tools):
         args = response.tool_call["function"]["arguments"]
         if isinstance(args, str):
             args = json.loads(args)
-        tool_call = {"tool": response.tool_call["function"]["name"], "kwargs": args}
+        tool_call = {
+            "tool": response.tool_call["function"]["name"],
+            "kwargs": args,
+        }
 
         # Add the parsed tool call to the response
         return Response(
@@ -170,13 +179,23 @@ class NativeTools(Tools):
             tool_call=tool_call,
         )
 
-    def observation(self, result) -> tuple[str, str]:
+    def observation(self, result: str) -> tuple[str, str]:
         """Native tool results use the 'tool' role."""
         return "tool", str(result)
 
     def is_done(self, response: Response) -> bool:
         """No tool call means the `TinyAgent` is done."""
         return not response.tool_call
+
+
+def _parse_frontmatter(text: str) -> dict:
+    """Parse simple `key: value` YAML frontmatter without external deps."""
+    result = {}
+    for line in text.strip().splitlines():
+        if ":" in line:
+            key, value = line.split(":", 1)
+            result[key.strip()] = value.strip()
+    return result
 
 
 class Skills(NativeTools):
@@ -209,7 +228,9 @@ class Skills(NativeTools):
 
         skill.__name__ = name
         skill.__doc__ = f"A skill that when activated provides the following context: '{description}'"
-        skill.__signature__ = inspect.Signature()  # schema sees no params; lambda still tolerates any
+        skill.__signature__ = (
+            inspect.Signature()
+        )  # schema sees no params; lambda still tolerates any
         self.add_tool(name, skill, skill.__doc__)
 
     @property

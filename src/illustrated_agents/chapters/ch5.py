@@ -1,6 +1,5 @@
 import inspect
 import json
-import yaml
 from pathlib import Path
 from typing import Any, Callable
 
@@ -206,6 +205,8 @@ class Skills(NativeTools):
 
     def add_skill(self, path: str) -> None:
         """Load a SKILL.md file and register it as a callable tool."""
+        import yaml
+
         content = Path(path).read_text(encoding="utf-8")
 
         # Split on YAML delimiters and extract the frontmatter and instructions

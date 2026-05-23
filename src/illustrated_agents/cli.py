@@ -34,7 +34,8 @@ except ImportError:
     console = _PlainConsole()
 
 
-from illustrated_agents import LLM, Memory, TinyAgent, NativeReAct
+from illustrated_agents import LLM, TinyAgent, NativeReAct
+from illustrated_agents.memory import MultimodalMemory
 from illustrated_agents.display import (
     label,
     Display,
@@ -162,7 +163,7 @@ def main():
     # Coding Agent
     agent = TinyAgent(
         llm=llm,
-        memory=Memory(),
+        memory=MultimodalMemory(),
         tools=tools,
         planner=planner,
         display=display,
@@ -211,14 +212,6 @@ def main():
             result = agent.run(query)
             if hasattr(display, "_stop_thinking"):
                 display._stop_thinking()
-            # if HAS_RICH:
-            #     console.print(
-            #         f"\n  :flamingo: [bold magenta]ANSWER[/]    {result}\n"
-            #         if args.pink
-            #         else f"\n  :dolphin: [bold cyan]ANSWER[/]    {result}\n"
-            #     )
-            # else:
-            #     console.print(f"\n  ANSWER    {result}\n")
         except Exception as e:
             if hasattr(display, "_stop_thinking"):
                 display._stop_thinking()

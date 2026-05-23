@@ -1,3 +1,5 @@
-from . import ch1, ch2, ch4, ch5, ch6, ch7
+"""Per-chapter reference implementations.
 
-__all__ = ["ch1", "ch2", "ch4", "ch5", "ch6", "ch7"]
+Import the specific chapter you need, e.g.
+`from illustrated_agents.chapters.ch10 import Display`.
+"""

@@ -1,4 +1,5 @@
-from openai import OpenAI
+import json
+import urllib.request
 
 from illustrated_agents.utils import CodeAnnotator, DiffViewer, ChapterOverview
 from illustrated_agents.chapters.ch2 import LLM, Trajectory
@@ -6,19 +7,30 @@ from illustrated_agents.chapters import ch2
 
 
 class EmbeddingModel:
-    """Wrapper around an embedding model, mirroring the `LLM` class."""
+    """Generate embeddings."""
 
-    def __init__(self, model: str, client: OpenAI):
+    def __init__(
+        self,
+        model: str,
+        base_url: str = "http://localhost:11434/v1",
+    ):
+        """Initialize the embedding model with the given model."""
         self.model = model
-        self.client = client
+        self.base_url = base_url
 
     def embed(self, text: str) -> list[float]:
         """Convert text into a numerical vector."""
-        return (
-            self.client.embeddings.create(model=self.model, input=text)
-            .data[0]
-            .embedding
+        # POST to the OpenAI-compatible /embeddings endpoint
+        request = urllib.request.Request(
+            f"{self.base_url}/embeddings",
+            data=json.dumps({"model": self.model, "input": text}).encode(),
+            headers={"Content-Type": "application/json"},
         )
+        with urllib.request.urlopen(request) as resp:
+            response = json.loads(resp.read())
+
+        # Extract and return the embedding
+        return response["data"][0]["embedding"]
 
 
 class Memory:
@@ -27,7 +39,9 @@ class Memory:
     def __init__(self):
         self.messages = []
 
-    def add(self, role: str, content: str, tool_call: dict | None = None) -> None:
+    def add(
+        self, role: str, content: str, tool_call: dict | None = None, **kwargs
+    ) -> None:
         """Add a message to memory."""
         message = {"role": role, "content": content}
 
@@ -46,9 +60,9 @@ class Memory:
 class TrimmingMemory(Memory):
     """Memory that keeps only the last two user/assistant turns."""
 
-    def add(self, role: str, content: str) -> None:
+    def add(self, role: str, content: str, **kwargs) -> None:
         # Add the new message first using the parent class (Memory)
-        super().add(role, content)
+        super().add(role, content, **kwargs)
 
         # Then, keep system message plus the most recent two turns (4 messages)
         system = [
@@ -67,9 +81,9 @@ class SummarizationMemory(Memory):
         super().__init__()
         self.llm = llm
 
-    def add(self, role: str, content: str) -> None:
+    def add(self, role: str, content: str, **kwargs) -> None:
         # Add the new message first using the parent class (Memory)
-        super().add(role, content)
+        super().add(role, content, **kwargs)
 
         # After each completed turn, update the running summary
         if role == "assistant":
@@ -94,8 +108,8 @@ Output the updated summary only."""
             self.messages = [{"role": "system", "content": response.content}]
 
 
-class LongTermMemory(Memory):
-    """Memory enhanced with RAG: augments user queries with retrieved documents."""
+class RAGMemory(Memory):
+    """Long-term Memory with RAG."""
 
     def __init__(self, embedding_model: EmbeddingModel, documents: list[str]):
         super().__init__()
@@ -103,7 +117,7 @@ class LongTermMemory(Memory):
         self.documents = documents
         self.embeddings = [embedding_model.embed(doc) for doc in documents]
 
-    def add(self, role: str, content: str) -> None:
+    def add(self, role: str, content: str, **kwargs) -> None:
         # Augment user queries with retrieved context before storing
         if role == "user":
             context = "\n".join(self.search(content))
@@ -111,16 +125,17 @@ class LongTermMemory(Memory):
 {context}
 
 Question: {content}"""
-        super().add(role, content)
+        super().add(role, content, **kwargs)
 
-    def search(self, query: str, k: int = 3) -> list[str]:
+    def search(self, query: str) -> list[str]:
         """Return the top-k documents most similar to the query."""
-        query_embedding = self.embedding_model.embed(query)
-        scores = [self._cosine(query_embedding, emb) for emb in self.embeddings]
+        query_embed = self.embedding_model.embed(query)
+        scores = [self._cosine(query_embed, embed) for embed in self.embeddings]
         ranked = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)
-        return [self.documents[i] for i in ranked[:k]]
+        return [self.documents[index] for index in ranked[:3]]
 
     def _cosine(self, a: list[float], b: list[float]) -> float:
+        """Calculate cosine similarity between two embeddings.."""
         dot = sum(x * y for x, y in zip(a, b))
         norm = (sum(x * x for x in a) ** 0.5) * (sum(x * x for x in b) ** 0.5)
         return dot / norm
@@ -178,7 +193,7 @@ what_we_built_lt = ChapterOverview(
         (
             "memory.py",
             "updated",
-            "Add `LongTermMemory` to the TinyAgent in the form of RAG.",
+            "Add `RAGMemory` to the TinyAgent in the form of RAG.",
         ),
         ("trajectory.py", None, ""),
     ]
