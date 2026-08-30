@@ -1,0 +1,195 @@
+import json
+import urllib.request
+from dataclasses import dataclass
+
+
+@dataclass
+class Response:
+    """Structured response from LLM calls."""
+
+    content: str = ""
+    reasoning: str | None = None
+    tool_call: dict | None = None
+    metadata: dict | None = None
+
+
+@dataclass
+class Step:
+    """A single step in an agent's trajectory."""
+
+    thought: str = ""
+    action: dict | None = None
+    observation: str | None = None
+    answer: str | None = None
+    metadata: dict | None = None
+
+
+class Trajectory:
+    """Records agent execution as a sequence of runs."""
+
+    def __init__(self) -> None:
+        self.runs: list[dict] = []
+
+    def initialize(self, query: str) -> None:
+        """Register a new run with the given query."""
+        self.runs.append({"query": query, "steps": []})
+
+    def add(self, response: Response, observation: str | None = None) -> None:
+        """Record a step from a Response, optionally with an observation."""
+        # Add THOUGHT
+        step = Step(
+            thought=response.reasoning or "",
+            metadata=response.metadata,
+        )
+
+        # Add ACTION/OBSERVATION or ANSWER
+        if observation is not None:
+            step.action = response.tool_call
+            step.observation = observation
+        else:
+            step.answer = response.content
+
+        self.runs[-1]["steps"].append(step)
+
+
+class LLM:
+    def __init__(
+        self,
+        model: str,
+        base_url: str = "http://localhost:11434/v1",
+        api_key: str = "no_key",
+        think: bool = False,
+        temperature: float | None = None,
+    ):
+        """Initialize the LLM with the given model."""
+        self.model = model
+        self.base_url = base_url
+        self.api_key = api_key
+        self.think = think
+        self.temperature = temperature
+
+    def generate(
+        self, messages: list[dict], tools: list | None = None
+    ) -> Response:
+        """Generate a response from the LLM given a list of messages."""
+        # Build the request body
+        body = {
+            "model": self.model,
+            "messages": messages,
+        }
+
+        # Tools and Reasoning
+        if tools:
+            body["tools"] = tools
+        if not self.think:
+            body["reasoning_effort"] = "none"
+        else:
+            body["reasoning_effort"] = "medium"
+        if self.temperature is not None:
+            body["temperature"] = self.temperature
+
+        # POST to the OpenAI-compatible /chat/completions endpoint
+        request = urllib.request.Request(
+            f"{self.base_url}/chat/completions",
+            data=json.dumps(body).encode(),
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {self.api_key}",
+            },
+        )
+        with urllib.request.urlopen(request) as response:
+            data = json.loads(response.read())
+
+        # Extract message, tool_call, and metadata
+        message = data["choices"][0]["message"]
+        reasoning = message.get("reasoning") or message.get("reasoning_content")
+        tool_calls = message.get("tool_calls")
+        tool_call = tool_calls[0] if tool_calls else None
+        metadata = {
+            "model": data["model"],
+            "prompt_tokens": data["usage"]["prompt_tokens"],
+            "completion_tokens": data["usage"]["completion_tokens"],
+        }
+
+        # Format as Response dataclass
+        return Response(
+            content=message.get("content"),
+            reasoning=reasoning,
+            tool_call=tool_call,
+            metadata=metadata,
+        )
+
+
+class OpenAIClientLLM:
+    def __init__(self, model: str, client, think: bool = False, **kwargs):
+        """Initialize the LLM with the given model."""
+        self.model = model
+        self.client = client
+        self.think = think
+        self.kwargs = kwargs
+
+    def generate(self, messages: list[dict], tools: list = None) -> Response:
+        """Generate a response from the LLM given a list of messages."""
+        # Enable/Disable thinking
+        if self.think:
+            extra_body = None
+        else:
+            extra_body = {
+                "chat_template_kwargs": {"enable_thinking": False},
+                "reasoning_effort": "none",
+            }
+
+        # Generate a response
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=messages,
+            tools=tools if tools else None,
+            extra_body=extra_body,
+            **self.kwargs,
+        )
+
+        # Extract message, tool_call, and metadata
+        message = response.choices[0].message
+        has_tool_call = hasattr(message, "tool_calls") and message.tool_calls
+        tool_call = message.tool_calls[0].model_dump() if has_tool_call else None
+        metadata = {
+            "model": response.model,
+            "prompt_tokens": response.usage.prompt_tokens,
+            "completion_tokens": response.usage.completion_tokens,
+        }
+
+        # Format as Response dataclass
+        return Response(
+            content=message.content,
+            reasoning=getattr(message, "reasoning_content", None)
+            or getattr(message, "reasoning", None),
+            tool_call=tool_call,
+            metadata=metadata,
+        )
+
+
+class EmbeddingModel:
+    """Generate embeddings."""
+
+    def __init__(
+        self,
+        model: str,
+        base_url: str = "http://localhost:11434/v1",
+    ):
+        """Initialize the embedding model with the given model."""
+        self.model = model
+        self.base_url = base_url
+
+    def embed(self, text: str) -> list[float]:
+        """Convert text into a numerical vector."""
+        # POST to the OpenAI-compatible /embeddings endpoint
+        request = urllib.request.Request(
+            f"{self.base_url}/embeddings",
+            data=json.dumps({"model": self.model, "input": text}).encode(),
+            headers={"Content-Type": "application/json"},
+        )
+        with urllib.request.urlopen(request) as resp:
+            response = json.loads(resp.read())
+
+        # Extract and return the embedding
+        return response["data"][0]["embedding"]

@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=77.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "illustrated-agents"
+version = "0.1.1"
+description = "The code for the book 'An Illustrated Guide to AI Agents'"
+authors = [
+  { name = "Maarten Grootendorst" },
+  { name = "Jay Alammar" },
+]
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICENSE"]
+
+dependencies = []
+
+[project.optional-dependencies]
+terminal = ["rich>=14.3.2"]
+mcp = ["mcp>=1.26.0", "nest_asyncio>=1.6.0"]
+jupyter = [
+    "jupyterlab>=4.1.5",
+    "ipywidgets>=8.1.8",
+    "pygments>=2.19.2",
+    "rich>=14.3.2",
+    "openai>=2.0.0",
+    "mcp>=1.26.0",
+]
+all = ["illustrated-agents[jupyter,terminal]"]
+
+[project.urls]
+Homepage = "https://github.com/HandsOnLLM/An-Illustrated-Guide-To-AI-Agents"
+Repository = "https://github.com/HandsOnLLM/An-Illustrated-Guide-To-AI-Agents"
+Issues = "https://github.com/HandsOnLLM/An-Illustrated-Guide-To-AI-Agents/issues"
+
+[project.scripts]
+tinyagent = "illustrated_agents.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 82
