@@ -2,6 +2,7 @@
 
 <a href="https://www.linkedin.com/in/mgrootendorst/"><img src="https://img.shields.io/badge/Follow%20Maarten-blue.svg?logo=linkedin"></a>
 <a href="https://www.linkedin.com/in/jalammar/"><img src="https://img.shields.io/badge/Follow%20Jay-blue.svg?logo=linkedin"></a>
+[![PyPI - PyPi](https://img.shields.io/pypi/v/illustrated-agents)](https://pypi.org/project/illustrated-agents/)
 
 Welcome! Here, you will find the code for the book [An Illustrated Guide to AI Agents](https://www.amazon.com/Illustrated-Guide-AI-Agents-Concepts/dp/B0GTYL2QSJ) written by [Maarten Grootendorst](https://www.linkedin.com/in/mgrootendorst/) and [Jay Alammar](https://www.linkedin.com/in/jalammar/). In this repository, you will:<br> 
 
