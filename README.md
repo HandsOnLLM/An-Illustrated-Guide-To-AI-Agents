@@ -59,6 +59,17 @@ All examples can be run in Google Colab for **free** using their T4 GPU. You hav
 
 ---
 
+## [Bonus content!](bonus/)
+
+We attempted to put as much information into the book without it being overwhelming. However, even with more than 300 visuals there is still much to discover!
+
+We continue to create free visual guides that complement the book and go more in-depth into new and [exciting topics](bonus/):
+
+| [A Visual Guide to Gemma 4](https://newsletter.maartengrootendorst.com/p/a-visual-guide-to-gemma-4) | [A Visual Guide to Multimodal Generation](https://newsletter.maartengrootendorst.com/p/a-visual-guide-to-multimodal-generation) |
+|:---:|:---:|
+| [<img src="bonus/images/gemma-4.png" width="400" alt="A Visual Guide to Gemma 4">](https://newsletter.maartengrootendorst.com/p/a-visual-guide-to-gemma-4) | [<img src="bonus/images/multimodal-generation.png" width="400" alt="A Visual Guide to Multimodal Generation">](https://newsletter.maartengrootendorst.com/p/a-visual-guide-to-multimodal-generation) |
+
+
 ## A Unique Way of Learning
 
 We wanted to do something special this time around and allow readers to **Build an Agent From Scratch**! However, we did not stop there and wanted the act of building the Agent to be a modular experience that enhances the learning experience. By iteratively adding components, one at a time, it becomes much more intuitive how an Agent actually works.
