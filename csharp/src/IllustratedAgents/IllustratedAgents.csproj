@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>IllustratedAgents</RootNamespace>
+    <Description>A C# port of TinyAgent from "An Illustrated Guide to AI Agents", built with nothing but HttpClient and System.Text.Json.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The example skill from chapter 5 travels with the library so every chapter can find it. -->
+    <None Include="skills\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="IllustratedAgents.Tests" />
+  </ItemGroup>
+
+</Project>

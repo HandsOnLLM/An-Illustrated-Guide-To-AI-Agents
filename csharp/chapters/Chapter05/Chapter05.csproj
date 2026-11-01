@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\IllustratedAgents\IllustratedAgents.csproj" />
+    <!-- Builds the MCP server alongside this app so the "mcp" demo can start it. -->
+    <ProjectReference Include="..\Chapter05.McpServer\Chapter05.McpServer.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,14 @@
+<Project>
+  <!-- Shared settings for every project in the C# TinyAgent kit. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!--
+      CS1998: an async method with no await. Exercise stubs throw before awaiting anything.
+      CS0169 / CS0649 / CS0414: fields that exercise stubs don't use yet.
+    -->
+    <NoWarn>$(NoWarn);CS1998;CS0169;CS0649;CS0414</NoWarn>
+  </PropertyGroup>
+</Project>

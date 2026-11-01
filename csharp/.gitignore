@@ -1,0 +1,9 @@
+# .NET build output
+bin/
+obj/
+*.user
+.vs/
+TestResults/
+
+# Files the chapter 10 coding agent creates
+chapters/Chapter10/workspace/
